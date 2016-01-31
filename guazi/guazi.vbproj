@@ -51,21 +51,17 @@
       <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net40\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
   </ItemGroup>
   <ItemGroup>
     <Import Include="Microsoft.VisualBasic" />
     <Import Include="System" />
     <Import Include="System.Collections" />
     <Import Include="System.Collections.Generic" />
-    <Import Include="System.Data" />
     <Import Include="System.Drawing" />
     <Import Include="System.Diagnostics" />
     <Import Include="System.Windows.Forms" />
@@ -73,18 +69,6 @@
     <Import Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\VBUtil\JsonParser.vb">
-      <Link>JsonParser.vb</Link>
-    </Compile>
-    <Compile Include="..\VBUtil\NetUtils.vb">
-      <Link>NetUtils.vb</Link>
-    </Compile>
-    <Compile Include="..\VBUtil\test.vb">
-      <Link>test.vb</Link>
-    </Compile>
-    <Compile Include="..\VBUtil\utils.vb">
-      <Link>utils.vb</Link>
-    </Compile>
     <Compile Include="Form1.Designer.vb">
       <DependentUpon>Form1.vb</DependentUpon>
       <SubType>Form</SubType>
@@ -95,7 +79,7 @@
     <Compile Include="frmLogin.Designer.vb">
       <DependentUpon>frmLogin.vb</DependentUpon>
       <SubType>Form</SubType>
-    </Compile>	
+    </Compile>
     <Compile Include="frmLogin.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -140,6 +124,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="b站登录说明v1.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VBUtil\VBUtil\VBUtil.vbproj">
+      <Project>{d4acda56-386a-4959-ae4d-9223048d90f2}</Project>
+      <Name>VBUtil</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

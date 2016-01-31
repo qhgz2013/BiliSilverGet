@@ -34,9 +34,10 @@
         End Module
         Public Module Variables
             Public Property DefaultCookieContainer As System.Net.CookieContainer
+            Public Delegate Sub test()
             Sub New()
                 DefaultCookieContainer = New Net.CookieContainer(10000, 500, 65535)
-            End Sub
+                End Sub
         End Module
         Public Module Functions
             ''' <summary>

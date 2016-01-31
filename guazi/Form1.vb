@@ -1,6 +1,7 @@
 ﻿Imports System.Threading
 Imports System.Security.Cryptography
 Imports System.Text
+Imports VBUtil
 Public Class Form1
 #Region "调试输出控制部分[多线程调度安全]"
     'multithread safe debug output
@@ -85,16 +86,8 @@ Public Class Form1
     End Sub
 
     Private Sub testButton_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles testButton.LinkClicked
-        'Dim a As String = "{'test':""a"",'a':null,'data':{'bool':true,'str':'test str'},'arr':[25,30,35,0]}"
-
-        'Dim obj As Newtonsoft.Json.Linq.JObject = Newtonsoft.Json.JsonConvert.DeserializeObject(a)
-
-
-        'Dim test As String = obj.Value(Of String)("test")
-
-        'Dim bool As Boolean = obj("data").Value(Of Boolean)("bool")
-
-
+        Dim n As New VBUtil.CookieDebugger()
+        n.Show()
     End Sub
 
     Private Sub CheckBox1_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBox1.CheckedChanged

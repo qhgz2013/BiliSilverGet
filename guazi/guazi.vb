@@ -15,8 +15,9 @@ Imports System.Threading
 Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.IO
-Imports guazi.Utils.NetUtils
-Imports guazi.Utils.StreamUtils
+Imports VBUtil.Utils.NetUtils
+Imports VBUtil.Utils.StreamUtils
+Imports VBUtil
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
 
@@ -91,30 +92,26 @@ Public Class guazi
                     RaiseEvent DebugOutput("还剩下" & Math.Round((picktime - Now).TotalMinutes) & "分钟")
 
                 End While
-                'While Not award_requests()
-                'Thread.Sleep(3000)
-                'End While
-                send_heartbeat()
-                'Dim answer As String
+
+                Dim times As Integer = 0
+                While award_requests() <> 0 AndAlso times <= 10
+                    times += 1
+                    RaiseEvent DebugOutput("领取请求发送错误，重试第" & times & "次")
+                    Thread.Sleep(10000)
+                End While
+
                 Dim awardsilver, getVote, svote As Integer
                 RaiseEvent DebugOutput("开始领取！")
                 For i As Integer = 1 To 11
-                    'answer = captcha_wrapper()
-                    'Dim count As Integer = 1
-                    'While answer = ""
-                    'RaiseEvent DebugOutput("验证码识别错误，重试第" & count & "次")
-                    'answer = captcha_wrapper()
-                    'count += 1
-                    'End While
-                    'Thread.Sleep(1000)
+                    
                     je = get_award()
                     If je.Value(Of Integer)("code") = 0 Then
 
                         awardsilver = je("data").Value(Of Integer)("awardSilver")
                         silver = je("data").Value(Of Integer)("silver")
-                        'getVote = je("data").Value(Of Integer)("getVote")
-                        'svote = je("data").Value(Of Integer)("svote")
-                        'vote = je("data").Value(Of Integer)("vote")
+                        getVote = 0
+                        svote = 0
+                        vote = 0
 
                         If awardsilver > 0 Then
                             Exit For
@@ -125,16 +122,13 @@ Public Class guazi
                     End If
                 Next
                 RaiseEvent DebugOutput("成功！得到" & awardsilver & "个银瓜子(总" & silver & "个)，" & getVote & "张投票券(总" & vote & "张,当天可用" & svote & "张)")
-                'If vote > svote Then vote = svote
-                'send_vote(vote)
-                'RaiseEvent DebugOutput("自动送出全部(" & vote & "张)投票券")
+                
                 Thread.Sleep(1000)
             Loop
         Catch ex As Exception
             RaiseEvent DebugOutput("[ERR] exception : " & vbCrLf & ex.ToString)
         End Try
         RaiseEvent FinishedExecuting()
-        'RaiseEvent DebugOutput("[Debug] Thread Callback Ended")
     End Sub
 
     ''' <summary>
@@ -161,81 +155,6 @@ Public Class guazi
         _startTime = Int(Utils.Others.ToUnixTimestamp(Now))
 
     End Sub
-
-    ''' <summary>
-    ''' math.rand()
-    ''' </summary>
-    ''' <returns>0~1的随机数</returns>
-    ''' <remarks></remarks>
-    Private Function randomR() As Double
-
-        Return Utils.Others.rand.NextDouble
-    End Function
-
-    ''' <summary>
-    ''' 验证数学表达式是否可求值
-    ''' </summary>
-    ''' <param name="string_this">待验证的数学表达式</param>
-    ''' <returns>是否可以用于求值</returns>
-    ''' <remarks></remarks>
-    Private Function safe_to_eval(ByVal string_this As String) As Boolean
-        Dim match As Match = Regex.Match(string_this, "^[\d\+\-\s]+$")
-
-        'RaiseEvent DebugOutput("[Debug] In safe_to_eval(string_this) return: " & match.Success.ToString)
-
-        If match.Success Then
-            Return True
-        Else
-            Return False
-        End If
-    End Function
-
-    ''' <summary>
-    ''' 表达式求值(这里只做了简单的两位数加减，如果要做全的话又得搬代码了)
-    ''' </summary>
-    ''' <param name="string_this">表达式</param>
-    ''' <returns>表达式的值</returns>
-    ''' <remarks></remarks>
-    Private Function eval(ByVal string_this As String) As String
-        '只做一个简单的加减法功能，如果要完全的表达式算值的话..
-        Dim a1 As String = "0"
-        Dim a2 As String = "0"
-        Dim oper As String = ""
-        Dim l As Boolean = False
-        For i As Integer = 0 To string_this.Length - 1
-            If IsNumeric(string_this(i)) Then
-                If l Then
-                    a2 &= string_this(i)
-                Else
-                    a1 &= string_this(i)
-                End If
-            ElseIf string_this(i) = "+" Then
-                oper = string_this(i)
-                l = True
-            ElseIf string_this(i) = "-" Then
-                oper = string_this(i)
-                l = True
-            ElseIf string_this(i) = " " Then
-            Else
-                Throw New Exception("Invalid Char")
-            End If
-        Next
-
-        Dim ret As String
-
-        Select Case oper
-            Case "+"
-                ret = Integer.Parse(a1) + Integer.Parse(a2)
-            Case "-"
-                ret = Integer.Parse(a1) - Integer.Parse(a2)
-            Case Else
-                ret = ""
-                Throw New Exception("Invalid Operator")
-        End Select
-        'RaiseEvent DebugOutput("[Debug] eval(string_this) return: " & ret)
-
-        Return ret
-    End Function
 
     ''' <summary>
     ''' 发送投票请求(因为投票券是当天有效的，get到后立马扔了不要留)
@@ -384,13 +303,15 @@ Public Class guazi
     ''' <summary>
     ''' 领取瓜子前的请求(前戏？)
     ''' </summary>
-    ''' <returns>此时是否能领取瓜子</returns>
+    ''' <returns>状态码</returns>
     ''' <remarks></remarks>
-    Private Function award_requests() As Boolean
-        Dim url As String = "http://live.bilibili.com/freeSilver/getSurplus"
+    Private Function award_requests() As Integer
+        Dim url As String = "http://live.bilibili.com/mobile/freeSilverSurplus"
         Dim req As New NetStream
         Dim param As New Parameters
-        param.Add("r", randomR)
+        param.Add("appkey", APPKEY)
+        param.Add("platform", "ios")
+        param.Add("sign", calc_sign(param.BuildURLQuery & SECRETKEY))
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
         Dim a As JObject = JsonConvert.DeserializeObject(str)
@@ -402,10 +323,10 @@ Public Class guazi
             RaiseEvent DebugOutput("[Debug] [HTTP string]" & a.ToString)
         End If
 
-        If req.HTTP_Response.StatusCode <> Net.HttpStatusCode.OK Or a.Value(Of Integer)("code") <> 0 Then
-            Return False
+        If req.HTTP_Response.StatusCode <> Net.HttpStatusCode.OK Then
+            Return -1
         Else
-            Return True
+            Return a.Value(Of Integer)("code")
         End If
     End Function
 
@@ -420,7 +341,7 @@ Public Class guazi
     End Sub
 End Class
 ''' <summary>
-''' 自动登录b站封装类
+''' b站登录函数[附带RSA加密模块]
 ''' </summary>
 ''' <remarks></remarks>
 Public Module Bilibili_Login

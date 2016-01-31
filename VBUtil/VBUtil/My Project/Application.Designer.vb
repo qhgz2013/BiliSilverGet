@@ -32,7 +32,7 @@ Namespace My
         
         <Global.System.Diagnostics.DebuggerStepThroughAttribute()>  _
         Protected Overrides Sub OnCreateMainForm()
-            Me.MainForm = Global.VBUtil.Form1
+            Me.MainForm = Global.VBUtil.CookieDebugger
         End Sub
     End Class
 End Namespace
