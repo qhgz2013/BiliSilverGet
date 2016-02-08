@@ -37,6 +37,7 @@ Partial Class Form1
         Me.bRoomId = New System.Windows.Forms.TextBox()
         Me.Label2 = New System.Windows.Forms.Label()
         Me.testButton = New System.Windows.Forms.LinkLabel()
+        Me.CheckBox3 = New System.Windows.Forms.CheckBox()
         Me.GroupBox1.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -82,6 +83,7 @@ Partial Class Form1
         '
         'GroupBox1
         '
+        Me.GroupBox1.Controls.Add(Me.CheckBox3)
         Me.GroupBox1.Controls.Add(Me.lblLogout)
         Me.GroupBox1.Controls.Add(Me.Button2)
         Me.GroupBox1.Controls.Add(Me.CheckBox2)
@@ -92,7 +94,7 @@ Partial Class Form1
         Me.GroupBox1.Controls.Add(Me.Label2)
         Me.GroupBox1.Location = New System.Drawing.Point(6, 6)
         Me.GroupBox1.Name = "GroupBox1"
-        Me.GroupBox1.Size = New System.Drawing.Size(495, 117)
+        Me.GroupBox1.Size = New System.Drawing.Size(495, 133)
         Me.GroupBox1.TabIndex = 11
         Me.GroupBox1.TabStop = False
         Me.GroupBox1.Text = "坑爹脚本1:b站直播自动领瓜子"
@@ -100,7 +102,7 @@ Partial Class Form1
         'lblLogout
         '
         Me.lblLogout.AutoSize = True
-        Me.lblLogout.Location = New System.Drawing.Point(7, 90)
+        Me.lblLogout.Location = New System.Drawing.Point(7, 110)
         Me.lblLogout.Name = "lblLogout"
         Me.lblLogout.Size = New System.Drawing.Size(77, 12)
         Me.lblLogout.TabIndex = 7
@@ -160,7 +162,6 @@ Partial Class Form1
         Me.bRoomId.Name = "bRoomId"
         Me.bRoomId.Size = New System.Drawing.Size(68, 21)
         Me.bRoomId.TabIndex = 1
-        Me.bRoomId.Visible = False
         '
         'Label2
         '
@@ -170,7 +171,6 @@ Partial Class Form1
         Me.Label2.Size = New System.Drawing.Size(65, 12)
         Me.Label2.TabIndex = 0
         Me.Label2.Text = "输入房间ID"
-        Me.Label2.Visible = False
         '
         'testButton
         '
@@ -181,6 +181,16 @@ Partial Class Form1
         Me.testButton.TabIndex = 12
         Me.testButton.TabStop = True
         Me.testButton.Text = "测试按钮"
+        '
+        'CheckBox3
+        '
+        Me.CheckBox3.AutoSize = True
+        Me.CheckBox3.Location = New System.Drawing.Point(9, 91)
+        Me.CheckBox3.Name = "CheckBox3"
+        Me.CheckBox3.Size = New System.Drawing.Size(144, 16)
+        Me.CheckBox3.TabIndex = 8
+        Me.CheckBox3.Text = "累计直播观看在线时长"
+        Me.CheckBox3.UseVisualStyleBackColor = True
         '
         'Form1
         '
@@ -215,5 +225,6 @@ Partial Class Form1
     Friend WithEvents CheckBox2 As System.Windows.Forms.CheckBox
     Friend WithEvents Button2 As System.Windows.Forms.Button
     Friend WithEvents lblLogout As System.Windows.Forms.LinkLabel
+    Friend WithEvents CheckBox3 As System.Windows.Forms.CheckBox
 
 End Class

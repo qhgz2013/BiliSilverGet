@@ -60,6 +60,29 @@ Public Class guazi
         'get room info
         get_room_info()
         Try
+            '签到
+            Dim dosign As JObject = daily_sign()
+            Dim sign_state As Integer = dosign.Value(Of Integer)("code")
+
+            Select Case sign_state
+                Case 0
+                    RaiseEvent DebugOutput("已完成签到")
+                Case Else
+                    RaiseEvent DebugOutput("未知错误:[" & sign_state & "]" & dosign.Value(Of String)("msg"))
+            End Select
+
+            '领取并送出道具
+            Dim gift_rep As JObject = get_send_gift()
+            If gift_rep.Value(Of Integer)("code") = 0 Then
+                RaiseEvent DebugOutput("领取每日道具成功，获得" & gift_rep.Value(Of JArray)("data").Count & "个道具")
+            Else
+                RaiseEvent DebugOutput("领取道具失败，返回数据:" & vbCrLf & gift_rep.ToString)
+            End If
+
+            RaiseEvent DebugOutput("自动送出道具(如果道具背包拥有)")
+            get_player_bag(True)
+
+            '循环领取瓜子
             Do
                 Dim je As JObject = get_new_task_time_and_award()
 
@@ -103,7 +126,7 @@ Public Class guazi
                 Dim awardsilver, getVote, svote As Integer
                 RaiseEvent DebugOutput("开始领取！")
                 For i As Integer = 1 To 11
-                    
+
                     je = get_award()
                     If je.Value(Of Integer)("code") = 0 Then
 
@@ -122,7 +145,7 @@ Public Class guazi
                     End If
                 Next
                 RaiseEvent DebugOutput("成功！得到" & awardsilver & "个银瓜子(总" & silver & "个)，" & getVote & "张投票券(总" & vote & "张,当天可用" & svote & "张)")
-                
+
                 Thread.Sleep(1000)
             Loop
         Catch ex As Exception
@@ -330,15 +353,194 @@ Public Class guazi
         End If
     End Function
 
+    ''' <summary>
+    ''' 每日签到函数
+    ''' </summary>
+    ''' <returns></returns>
+    ''' <remarks></remarks>
+    Private Function daily_sign() As JObject
+        Dim url As String = "http://live.bilibili.com/sign/doSign"
+        Dim status_url As String = "http://live.bilibili.com/sign/GetSignInfo"
+
+        Dim http_req As New NetStream
+        http_req.HttpGet(status_url)
+        Dim rep As String = ReadToEnd(http_req.Stream)
+        http_req.Close()
+
+        Dim ret As JObject = JsonConvert.DeserializeObject(rep)
+        Dim sign_status As Integer = ret("data").Value(Of Integer)("status")
+
+        If sign_status = 0 Then
+            http_req.HttpGet(url)
+            rep = ReadToEnd(http_req.Stream)
+            http_req.Close()
+            Return JsonConvert.DeserializeObject(rep)
+        End If
+
+        Return ret
+    End Function
+
+    ''' <summary>
+    ''' 获得周期性赠送的道具
+    ''' </summary>
+    ''' <returns></returns>
+    ''' <remarks></remarks>
+    Private Function get_send_gift() As JObject
+        Dim url As String = "http://live.bilibili.com/giftBag/sendDaily"
+        Dim url2 As String = "http://live.bilibili.com/giftBag/getSendGift"
+        Dim http_req As New NetStream
+        http_req.HttpGet(url)
+        http_req.HttpGet(url2)
+        Dim rep As String = ReadToEnd(http_req.Stream)
+        http_req.Close()
+        Return JsonConvert.DeserializeObject(rep)
+    End Function
+
+    ''' <summary>
+    ''' 获取用户道具列表，并确定是否自动送出
+    ''' </summary>
+    ''' <returns></returns>
+    ''' <remarks></remarks>
+    Private Function get_player_bag(Optional ByVal auto_send As Boolean = False) As JObject
+        Dim url As String = "http://live.bilibili.com/gift/playerBag"
+        Dim http_req As New NetStream
+        http_req.HttpGet(url)
+        Dim rep As String = ReadToEnd(http_req.Stream)
+        http_req.Close()
+
+        Dim ret As JObject = JsonConvert.DeserializeObject(rep)
+
+        If auto_send AndAlso _RoomId > 0 Then
+            Dim arr As JArray = ret.Value(Of JArray)("data")
+            '获取道具名称
+            For Each item As JObject In arr
+                Dim gift_id As Integer = item.Value(Of Integer)("gift_id")
+                Dim gift_num As Integer = item.Value(Of Integer)("gift_num")
+                Dim id As Integer = item.Value(Of Integer)("id")
+
+                'HTTP请求
+                Dim req_param As New Parameters
+                Dim gift_send_url As String = "http://live.bilibili.com/giftBag/send"
+                req_param.Add("giftId", gift_id)
+                req_param.Add("roomid", _RoomId)
+                'req_param.Add("ruid", _RoomInfo.Value(Of Integer)("MASTERID"))
+                req_param.Add("ruid", _RoomInfo("data").Value(Of Integer)("MASTERID"))
+                req_param.Add("num", gift_num)
+                req_param.Add("coinType", "silver")
+                req_param.Add("Bag_id", id)
+                req_param.Add("timestamp", CInt(VBUtil.Utils.Others.ToUnixTimestamp(Now)))
+                req_param.Add("rnd", VBUtil.Utils.Others.rand.Next())
+                req_param.Add("token", DefaultCookieContainer.GetCookies(New Uri(gift_send_url))("LIVE_LOGIN_DATA").Value)
+
+                http_req.HttpPost(gift_send_url, req_param)
+
+                Dim post_result As String = ReadToEnd(http_req.Stream)
+                http_req.Close()
+                Dim post_result_ds As JObject = JsonConvert.DeserializeObject(post_result)
+                Dim post_result_code As Integer = post_result_ds.Value(Of Integer)("code")
+                If post_result_code = 0 Then
+                    RaiseEvent DebugOutput("自动送出道具成功(道具编号:" & gift_id & ",数量:" & gift_num & ")")
+                Else
+                    RaiseEvent DebugOutput("送出道具失败，返回数据:" & vbCrLf & post_result_ds.ToString)
+                End If
+
+                '不知道为什么送完后会加上一条这样的get
+                Dim callback_url As String = "http://live.bilibili.com/giftBag/sendDaily"
+                http_req.HttpGet(callback_url)
+                Dim callback_str As String = ReadToEnd(http_req.Stream)
+                http_req.Close()
+                Dim callback_ds As JObject = JsonConvert.DeserializeObject(callback_str)
+                Dim callback_code As Integer = callback_ds.Value(Of Integer)("code")
+                If callback_code <> 0 Then
+                    RaiseEvent DebugOutput("送出道具回调检测失败，返回数据:" & vbCrLf & post_result_ds.ToString)
+                End If
+            Next
+
+            '重置返回值
+            If arr.Count Then
+                http_req.HttpGet(url)
+                rep = ReadToEnd(http_req.Stream)
+                http_req.Close()
+                ret = JsonConvert.DeserializeObject(rep)
+            End If
+
+            Return ret
+
+        Else
+            Return ret
+        End If
+    End Function
+
+    ''' <summary>
+    ''' 构造函数，roomid之前是用来送投票券和道具的
+    ''' </summary>
+    ''' <param name="roomid"></param>
+    ''' <remarks></remarks>
     Public Sub New(Optional ByVal roomid As Integer = 0)
         _workThd = New Thread(AddressOf CallBack)
-        _workThd.Name = "Auto Grabbing Silvers"
+        _workThd.Name = "Bili Live Auto Grabbing Silver Thread"
 
         _RoomId = roomid
         _RoomInfo = Nothing
 
         _workThd.Start()
     End Sub
+End Class
+''' <summary>
+''' 自动挂机累加在线时长的东东
+''' </summary>
+''' <remarks></remarks>
+Public Class keep_on_line
+    Private _thd As Thread
+    Private _next_update_time As DateTime
+    Private _beg_time As DateTime
+    Private _thread_abort_flag As Boolean
+    Public Sub New()
+        _thd = New Thread(AddressOf CallBack)
+        _thd.Name = "Bili Live Heart Beat Thread"
+        _next_update_time = Now
+        _thread_abort_flag = False
+        _beg_time = Now
+        _thd.Start()
+    End Sub
+    Public Sub Abort()
+        _thread_abort_flag = True
+        _thd.Join()
+    End Sub
+    Private Sub CallBack()
+        Dim req_url As String = "http://live.bilibili.com/feed/heartBeat/heartBeat"
+        Dim req As New NetStream
+        While Not _thread_abort_flag
+            Try
+                Thread.Sleep(1000)
+                If _next_update_time < Now Then
+                    _next_update_time = _next_update_time.AddMinutes(1)
+
+                    Dim req_param As New Parameters
+                    Dim hb As String = "0"
+                    req_param.Add("hb", hb)
+                    req.HttpPost(req_url, req_param)
+
+                    Dim ret_str As String = ReadToEnd(req.Stream)
+                    req.Close()
+                    'replace
+                    ret_str = Regex.Replace(ret_str, "\((.*?)\);", "$1")
+                    Dim ret_obj As JObject = JsonConvert.DeserializeObject(ret_str)
+                    Dim code As Integer = ret_obj.Value(Of Integer)("code")
+                    'hb = ret_obj("data").Value(Of String)("hb")
+                    If code = 0 Then
+                        'RaiseEvent DebugOutput("发送在线心跳包成功,已在线" & Int((Now - _beg_time).TotalMinutes) & "分钟")
+                    Else
+                        RaiseEvent DebugOutput("发送在线心跳包失败:" & code)
+                    End If
+
+                End If
+            Catch ex As Exception
+                RaiseEvent DebugOutput("[ERROR] " & ex.ToString)
+            End Try
+        End While
+    End Sub
+    Public Event DebugOutput(ByVal msg As String)
 End Class
 ''' <summary>
 ''' b站登录函数[附带RSA加密模块]

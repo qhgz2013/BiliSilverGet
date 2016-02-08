@@ -53,16 +53,15 @@ Public Class Form1
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         'Auto load cookie
         Utils.NetUtils.LoadCookie(Application.StartupPath & "\cookie.dat")
-        LoadGuaziConfig()
         'login check
         If Not CheckLogin() Then
             DebugOutput("状态：未登录")
             frmLogin.ShowDialog()
-        Else
-            DebugOutput("状态：已经登录")
-            If CheckBox2.Checked Then
-                getGuazi.PerformClick()
-            End If
+        End If
+        DebugOutput("状态：已经登录")
+        LoadGuaziConfig()
+        If CheckBox2.Checked Then
+            getGuazi.PerformClick()
         End If
     End Sub
 
@@ -77,11 +76,11 @@ Public Class Form1
     End Sub
 
     Private Sub getGuazi_Click(sender As Object, e As EventArgs) Handles getGuazi.Click
-        'If Not IsNumeric(bRoomId.Text) Then
-        'MessageBox.Show("房间号是数字你在逗我呢_(:з」∠)_")
-        'Return
-        'End If
-        gz = New guazi '(bRoomId.Text)
+        If Not IsNumeric(bRoomId.Text) Then
+            MessageBox.Show("房间号是数字你在逗我呢_(:з」∠)_")
+            Return
+        End If
+        gz = New guazi(bRoomId.Text)
         getGuazi.Enabled = False
     End Sub
 
@@ -107,6 +106,7 @@ Public Class Form1
         bRoomId.Text = obj.Value(Of String)("roomid")
         CheckBox1.Checked = obj.Value(Of Boolean)("auto_shutdown")
         CheckBox2.Checked = obj.Value(Of Boolean)("auto_start")
+        CheckBox3.Checked = obj.Value(Of Boolean)("keep_online")
     End Sub
     'save config
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
@@ -114,10 +114,12 @@ Public Class Form1
         Dim roomid As String = bRoomId.Text
         Dim auto_shutdown As Boolean = CheckBox1.Checked
         Dim auto_start As Boolean = CheckBox2.Checked
+        Dim keep_online As Boolean = CheckBox3.Checked
         Dim obj As New Newtonsoft.Json.Linq.JObject
         obj.Add("roomid", roomid)
         obj.Add("auto_shutdown", auto_shutdown)
         obj.Add("auto_start", auto_start)
+        obj.Add("keep_online", keep_online)
         Dim str As String = Newtonsoft.Json.JsonConvert.SerializeObject(obj)
         Dim sw As New IO.StreamWriter(Application.StartupPath & "\setting.json")
         sw.Write(str)
@@ -150,5 +152,20 @@ Public Class Form1
             DebugOutput("退出登录失败")
             MessageBox.Show("退出登录失败，请重试")
         End If
+    End Sub
+    'heart beat
+    Private WithEvents _hb As keep_on_line
+    Private Sub CheckBox3_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBox3.CheckedChanged
+        If CheckBox3.Checked Then
+            _hb = New keep_on_line
+            CheckBox1.Checked = False
+        Else
+            If _hb IsNot Nothing Then
+                _hb.Abort()
+            End If
+        End If
+    End Sub
+    Private Sub _hb_debugOutput(ByVal str As String) Handles _hb.DebugOutput
+        DebugOutput(str)
     End Sub
 End Class
