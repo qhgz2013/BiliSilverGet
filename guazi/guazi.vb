@@ -9,7 +9,7 @@
 ' https://github.com/cnbeining
 
 'source code : python ->  vb .net
-'translator: pandasxd (12/13/2015)
+'translator: pandasxd (4/3/2016)
 
 Imports System.Threading
 Imports System.Text
@@ -20,6 +20,8 @@ Imports VBUtil.Utils.StreamUtils
 Imports VBUtil
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
+Imports System.Net
+Imports System.Net.Sockets
 
 ''' <summary>
 ''' 哼，我就要瓜子，你来咬我啊
@@ -29,11 +31,9 @@ Imports Newtonsoft.Json.Linq
 Public Module Variables
 End Module
 Public Class guazi
-    'Debug v1.2 added mobile
     Public Event DebugOutput(ByVal msg As String)
     Public Event FinishedGrabbing()
-    Public Event FinishedExecuting()
-    Public Event StartedExecuting()
+
     Private _workThd As Thread
     Private _startTime As Integer
     Private _RoomId As Integer
@@ -44,75 +44,62 @@ Public Class guazi
     Private Const VER As String = "0.98.86"
 
     Private Const DEBUG_RETURN_INFO As Boolean = False
+
+    'grabbing silver module
     Private Function calc_sign(ByVal str As String) As String
         Dim md5 As New System.Security.Cryptography.MD5CryptoServiceProvider
 
         Return Utils.Others.Hex(md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(str))).ToLower
     End Function
 
+    Private _expireTime As Date
+    Public Event RefreshClock(ByVal expireTime As Date, ByVal silver As Integer)
     ''' <summary>
-    ''' 线程回调函数
+    ''' 领取瓜子线程回调函数
     ''' </summary>
     ''' <remarks></remarks>
-    Private Sub CallBack()
-        'RaiseEvent DebugOutput("[Debug] Thread Callback Started")
-        RaiseEvent StartedExecuting()
-        'get room info
-        get_room_info()
+    Private Sub GuaziCallBack()
         Try
-            '签到
-            Dim dosign As JObject = daily_sign()
-            Dim sign_state As Integer = dosign.Value(Of Integer)("code")
+            _expireTime = Date.MinValue
 
-            Select Case sign_state
-                Case 0
-                    RaiseEvent DebugOutput("已完成签到")
-                Case Else
-                    RaiseEvent DebugOutput("未知错误:[" & sign_state & "]" & dosign.Value(Of String)("msg"))
-            End Select
-
-            '领取并送出道具
-            Dim gift_rep As JObject = get_send_gift()
-            If gift_rep.Value(Of Integer)("code") = 0 Then
-                RaiseEvent DebugOutput("领取每日道具成功，获得" & gift_rep.Value(Of JArray)("data").Count & "个道具")
-            Else
-                RaiseEvent DebugOutput("领取道具失败，返回数据:" & vbCrLf & gift_rep.ToString)
-            End If
-
-            RaiseEvent DebugOutput("自动送出道具(如果道具背包拥有)")
-            get_player_bag(True)
-
+            Dim je As JObject
             '循环领取瓜子
             Do
-                Dim je As JObject = get_new_task_time_and_award()
 
-                Dim code As Integer = je.Value(Of Integer)("code")
-                If code = -10017 Then
-                    RaiseEvent DebugOutput("本日瓜子已领完，欢迎下次再来XD")
-                    RaiseEvent FinishedGrabbing()
-                    Exit Do
-                ElseIf code <> 0 Then
-                    For i As Integer = 1 To 11
-                        Thread.Sleep(1000)
-                        RaiseEvent DebugOutput("发送领取请求错误，重试第" & i & "次")
-                        je = get_new_task_time_and_award()
-                        code = je.Value(Of Integer)("code")
+                '+ : 把领奖时间设为成员变量，避免重新领取任务
+                If _expireTime = Date.MinValue Then
+                    je = get_new_task_time_and_award()
 
-                    Next
+                    Dim code As Integer = je.Value(Of Integer)("code")
+                    If code = -10017 Then
+                        RaiseEvent DebugOutput("本日瓜子已领完，欢迎下次再来XD")
+                        RaiseEvent FinishedGrabbing()
+                        Exit Do
+                    ElseIf code <> 0 Then
+                        For i As Integer = 1 To 11
+                            Thread.Sleep(1000)
+                            RaiseEvent DebugOutput("发送领取请求错误，重试第" & i & "次")
+                            je = get_new_task_time_and_award()
+                            code = je.Value(Of Integer)("code")
+
+                        Next
+                    End If
+                    Dim minutes As Integer = je("data").Value(Of Integer)("minute")
+                    Dim silver As Integer = je("data").Value(Of Integer)("silver")
+
+                    'RaiseEvent DebugOutput("预计下次领取需要" & minutes & "分钟，可以领取" & silver & "个银瓜子")
+                    _expireTime = Now.AddMinutes(minutes)
+
+                    RaiseEvent RefreshClock(_expireTime, silver)
                 End If
-                Dim minutes As Integer = je("data").Value(Of Integer)("minute")
-                Dim silver As Integer = je("data").Value(Of Integer)("silver")
-                Dim vote As Integer = je("data").Value(Of Integer)("vote")
 
-                RaiseEvent DebugOutput("预计下次领取需要" & minutes & "分钟，可以领取" & silver & "个银瓜子和" & vote & "张投票券")
 
-                Thread.Sleep(3000)
-
-                Dim picktime As Date = Now + New TimeSpan(0, minutes, 0)
-                While (picktime - Now).TotalSeconds > 0
-                    Thread.Sleep(New TimeSpan(0, 1, 0))
+                While (_expireTime - Now).TotalSeconds > 0
                     send_heartbeat()
-                    RaiseEvent DebugOutput("还剩下" & Math.Round((picktime - Now).TotalMinutes) & "分钟")
+                    Dim sleep_time As Integer = (_expireTime - Now).Seconds * 1000 + (_expireTime - Now).Milliseconds
+                    If sleep_time < 0 Then sleep_time = 0
+                    Thread.Sleep(sleep_time)
+                    'RaiseEvent DebugOutput("还剩下" & Math.Round((_expireTime - Now).TotalMinutes) & "分钟")
 
                 End While
 
@@ -123,35 +110,28 @@ Public Class guazi
                     Thread.Sleep(10000)
                 End While
 
-                Dim awardsilver, getVote, svote As Integer
-                RaiseEvent DebugOutput("开始领取！")
-                For i As Integer = 1 To 11
+                'RaiseEvent DebugOutput("开始领取")
 
-                    je = get_award()
-                    If je.Value(Of Integer)("code") = 0 Then
+                Dim getsilver, total_silver As Integer
+                je = get_award()
+                If je.Value(Of Integer)("code") = 0 Then
 
-                        awardsilver = je("data").Value(Of Integer)("awardSilver")
-                        silver = je("data").Value(Of Integer)("silver")
-                        getVote = 0
-                        svote = 0
-                        vote = 0
+                    getsilver = je("data").Value(Of Integer)("awardSilver")
+                    total_silver = je("data").Value(Of Integer)("silver")
 
-                        If awardsilver > 0 Then
-                            Exit For
-                        End If
-                    Else
-                        RaiseEvent DebugOutput("错误,重试第" & i & "次")
-                        Thread.Sleep(60000)
+                    If getsilver > 0 Then
+                        RaiseEvent DebugOutput("领取成功！得到" & getsilver & "个银瓜子(总" & total_silver & "个)")
+                        _expireTime = Date.MinValue
                     End If
-                Next
-                RaiseEvent DebugOutput("成功！得到" & awardsilver & "个银瓜子(总" & silver & "个)，" & getVote & "张投票券(总" & vote & "张,当天可用" & svote & "张)")
+                Else
+                    RaiseEvent DebugOutput("领取错误")
+                    _expireTime = Date.MinValue
+                End If
 
-                Thread.Sleep(1000)
             Loop
         Catch ex As Exception
-            RaiseEvent DebugOutput("[ERR] exception : " & vbCrLf & ex.ToString)
+            RaiseEvent DebugOutput("[ERR] 抛出异常: " & vbCrLf & ex.ToString)
         End Try
-        RaiseEvent FinishedExecuting()
     End Sub
 
     ''' <summary>
@@ -159,7 +139,10 @@ Public Class guazi
     ''' </summary>
     ''' <remarks></remarks>
     Private Sub get_room_info()
-        If _RoomId = 0 Then Return
+        If _RoomId <= 0 Then
+            _RoomInfo = New JObject
+            Return
+        End If
         Dim url As String = "http://live.bilibili.com/live/getInfo"
         Dim param As New Parameters
         param.Add("roomid", _RoomId)
@@ -177,44 +160,6 @@ Public Class guazi
 
         _startTime = Int(Utils.Others.ToUnixTimestamp(Now))
 
-    End Sub
-
-    ''' <summary>
-    ''' 发送投票请求(因为投票券是当天有效的，get到后立马扔了不要留)
-    ''' </summary>
-    ''' <param name="num">要撒花的数量(注意不要超过最大数值)</param>
-    ''' <remarks>为了安全，明天添加个数值检测 url:/activity/getStarVote?timestamp=x</remarks>
-    Private Sub send_vote(ByVal num As Integer)
-        Dim url As String = "http://live.bilibili.com/gift/send"
-        If _RoomId = 0 Then Return
-        If num <= 0 Then Return
-        Dim param As New Parameters
-        param.Add("giftId", 11)
-        param.Add("roomid", _RoomId)
-        param.Add("ruid", _RoomInfo("data").Value(Of Integer)("MASTERID"))
-        param.Add("num", num)
-        param.Add("coinType", "gold")
-        param.Add("timestamp", Int(Utils.Others.ToUnixTimestamp(Now)))
-        param.Add("rnd", _startTime)
-        Dim token As String = DefaultCookieContainer.GetCookies(New Uri(url))("LIVE_LOGIN_DATA").Value
-        param.Add("token", token)
-
-        '就是少了这个东东结果一直卡参数错误上了_(:з」∠)_
-        '哔——站码农都是傻逼么
-        Dim headerparam As New Parameters
-        headerparam.Add("X-Requested-With", "XMLHttpRequest")
-
-        Dim req As New NetStream
-        req.HttpPost(url, param, headerparam)
-
-        Dim str As String = ReadToEnd(req.Stream)
-        req.Close()
-        Dim n As JObject = JsonConvert.DeserializeObject(str)
-        str = n.ToString
-
-        If DEBUG_RETURN_INFO Then
-            RaiseEvent DebugOutput("[Debug] in send_vote: " & str)
-        End If
     End Sub
 
     ''' <summary>
@@ -471,102 +416,373 @@ Public Class guazi
         End If
     End Function
 
+
+    'public functions
     ''' <summary>
     ''' 构造函数，roomid之前是用来送投票券和道具的
     ''' </summary>
     ''' <param name="roomid"></param>
     ''' <remarks></remarks>
     Public Sub New(Optional ByVal roomid As Integer = 0)
-        _workThd = New Thread(AddressOf CallBack)
+        _workThd = New Thread(AddressOf GuaziCallBack)
         _workThd.Name = "Bili Live Auto Grabbing Silver Thread"
+
+        _CommentThd = New Thread(AddressOf CommentThdCallback)
+        _CommentThd.Name = "Bili Live Comment Receiving Thread"
 
         _RoomId = roomid
         _RoomInfo = Nothing
-
-        _workThd.Start()
+        _DownloadManager = New HTTP_Stream_Manager
+        _expireTime = Date.MinValue
+        Try
+            get_room_info()
+        Catch ex As Exception
+            Throw ex
+        End Try
     End Sub
-End Class
-''' <summary>
-''' 自动挂机累加在线时长的东东
-''' </summary>
-''' <remarks></remarks>
-Public Class keep_on_line
-    Private _thd As Thread
-    Private _next_update_time As DateTime
-    Private _beg_time As DateTime
-    Private _thread_abort_flag As Boolean
-    Public Sub New()
-        _thd = New Thread(AddressOf CallBack)
-        _thd.Name = "Bili Live Heart Beat Thread"
-        _next_update_time = Now
-        _thread_abort_flag = False
-        _beg_time = Now
-        _thd.Start()
-    End Sub
-    Public Sub Abort()
-        _thread_abort_flag = True
-        _thd.Join()
-    End Sub
-    Private Sub CallBack()
-        Dim req_url As String = "http://live.bilibili.com/feed/heartBeat/heartBeat"
-        Dim req As New NetStream
-        While Not _thread_abort_flag
-            Try
-                Thread.Sleep(1000)
-                If _next_update_time < Now Then
-                    _next_update_time = _next_update_time.AddMinutes(1)
 
-                    Dim req_param As New Parameters
-                    Dim hb As String = "0"
-                    req_param.Add("hb", hb)
-                    req.HttpPost(req_url, req_param)
+    '开始领取瓜子
+    Public Sub AsyncStartGrabbingSilver()
+        If _workThd.ThreadState = ThreadState.Stopped Or _workThd.ThreadState = ThreadState.Aborted Then
+            _workThd = New Thread(AddressOf GuaziCallBack)
+            _workThd.Name = "Bili Live Auto Grabbing Silver Thread"
+        End If
 
-                    Dim ret_str As String = ReadToEnd(req.Stream)
-                    req.Close()
-                    'replace
-                    ret_str = Regex.Replace(ret_str, "\((.*?)\);", "$1")
-                    Dim ret_obj As JObject = JsonConvert.DeserializeObject(ret_str)
-                    Dim code As Integer = ret_obj.Value(Of Integer)("code")
-                    'hb = ret_obj("data").Value(Of String)("hb")
-                    If code = 0 Then
-                        'RaiseEvent DebugOutput("发送在线心跳包成功,已在线" & Int((Now - _beg_time).TotalMinutes) & "分钟")
+        If _workThd.ThreadState = ThreadState.Unstarted Then
+            _workThd.Start()
+        End If
+    End Sub
+    '停止领取瓜子
+    Public Sub AsyncEndGrabbingSilver()
+        If _workThd.ThreadState = ThreadState.Running Then
+            _workThd.Abort()
+        End If
+    End Sub
+    '获得每日道具
+    Public Sub AsyncGetDailyGift()
+        Dim thd As New Thread( _
+            Sub()
+                Try
+                    '领取道具
+                    Dim gift_rep As JObject = get_send_gift()
+                    If gift_rep.Value(Of Integer)("code") = 0 Then
+                        RaiseEvent DebugOutput("领取每日道具成功，获得" & gift_rep.Value(Of JArray)("data").Count & "个道具")
                     Else
-                        RaiseEvent DebugOutput("发送在线心跳包失败:" & code)
+                        RaiseEvent DebugOutput("领取道具失败，返回数据:" & vbCrLf & gift_rep.ToString)
                     End If
+                Catch ex As Exception
+                    RaiseEvent DebugOutput("[ERR] 抛出异常: " & ex.ToString)
+                End Try
+            End Sub)
 
-                End If
-            Catch ex As Exception
-                RaiseEvent DebugOutput("[ERROR] " & ex.ToString)
-            End Try
-        End While
+        thd.Name = "Get Daily Gift Thread"
+        thd.Start()
     End Sub
-    Public Event DebugOutput(ByVal msg As String)
+    '赠送每日道具
+    Public Sub AsyncSendDailyGift()
+        If _RoomId <= 0 Then Return
+        Dim thd As New Thread( _
+            Sub()
+                Try
+                    get_player_bag(True)
+
+                Catch ex As Exception
+                    RaiseEvent DebugOutput("ERR] 抛出异常: " & ex.ToString)
+                End Try
+            End Sub)
+
+        thd.Name = "Send Daily Gift Thread"
+        thd.Start()
+    End Sub
+    '签到
+    Public Sub AsyncDoSign()
+        Dim thd As New Thread( _
+            Sub()
+                Try
+
+                    '签到
+                    Dim dosign As JObject = daily_sign()
+                    Dim sign_state As Integer = dosign.Value(Of Integer)("code")
+
+                    Select Case sign_state
+                        Case 0
+                            RaiseEvent DebugOutput("已完成签到")
+                        Case Else
+                            RaiseEvent DebugOutput("未知错误:[" & sign_state & "]" & dosign.Value(Of String)("msg"))
+                    End Select
+
+                Catch ex As Exception
+                    RaiseEvent DebugOutput("ERR] 抛出异常: " & ex.ToString)
+                End Try
+            End Sub)
+
+        thd.Name = "Daily Sign Thread"
+        thd.Start()
+    End Sub
+
+    Public Property RoomID() As Integer
+        Get
+            Return _RoomId
+        End Get
+        Set(value As Integer)
+            If _RoomId = value Then Return
+            RaiseEvent DebugOutput("进入房间:" & value & "成功")
+            _RoomId = value
+            get_room_info()
+            AsyncStopDownloadStream()
+        End Set
+    End Property
+
+    '录播
+    Private Const DEFAULT_VIDEO_URL As String = "http://live.bilibili.com/api/playurl"
+    Private WithEvents _DownloadManager As HTTP_Stream_Manager
+    Public Event DownloadStarted()
+    Public Event DownloadStopped()
+    Private Sub OnDownloadStatusChange(ByVal name As String, ByVal fromstatus As VBUtil.HTTP_Stream_Manager.StreamStatus, ByVal tostatus As VBUtil.HTTP_Stream_Manager.StreamStatus) Handles _DownloadManager.StatusUpdate
+        If tostatus = HTTP_Stream_Manager.StreamStatus.STATUS_WORK Then
+            RaiseEvent DownloadStarted()
+        ElseIf tostatus = HTTP_Stream_Manager.StreamStatus.STATUS_STOP Then
+            RaiseEvent DownloadStopped()
+        End If
+    End Sub
+    Public Event DownloadSpeed(ByVal speed As Integer)
+    Private Sub OnSpeedChange() Handles _DownloadManager.SpeedUpdate
+        RaiseEvent DownloadSpeed(_DownloadManager.GetSpeed())
+    End Sub
+    Public Sub AsyncStartDownloadStream(ByVal path As String)
+        If _RoomId <= 0 Then Return
+
+        Try
+
+            Dim param As New Parameters
+            param.Add("cid", _RoomId)
+            param.Add("player", 1)
+            param.Add("quality", 0)
+
+            Dim xml_document As New Xml.XmlDocument
+            Dim req As New NetStream
+            req.HttpGet(DEFAULT_VIDEO_URL, , param)
+            Dim xml_str As String = ReadToEnd(req.Stream)
+            req.Close()
+            xml_document.LoadXml(xml_str)
+
+            Dim url As String = xml_document("video")("durl")("url").InnerText
+
+            _DownloadManager.AddTaskAndStart(path, url, "Video")
+
+        Catch ex As Exception
+            RaiseEvent DebugOutput("[ERR] 抛出异常: " & ex.ToString)
+            RaiseEvent DownloadStopped()
+        End Try
+    End Sub
+
+    Public Sub AsyncStopDownloadStream()
+        Try
+            _DownloadManager.StopTask("Video")
+        Catch ex As Exception
+            RaiseEvent DebugOutput("[ERR] 抛出异常: " & ex.ToString)
+
+        End Try
+    End Sub
+
+
+    '弹幕
+    Private _CommentThd As Thread
+    Private Const DEFAULT_COMMENT_HOST As String = "livecmt-1.bilibili.com"
+    Private Const DEFAULT_COMMENT_PORT As Integer = 788
+    Private Sub CommentThdCallback()
+        If _RoomId <= 0 Then Return
+        Dim ipaddr As IPAddress = Dns.GetHostAddresses(DEFAULT_COMMENT_HOST)(0)
+        Dim ip_ed As IPEndPoint = New IPEndPoint(ipaddr, DEFAULT_COMMENT_PORT)
+
+        Dim sck As New Sockets.Socket(Sockets.AddressFamily.InterNetwork, Sockets.SocketType.Stream, Sockets.ProtocolType.Tcp)
+        Dim buffer(8191) As Byte
+        Dim length As Integer = 0
+        Try
+            sck.Connect(ip_ed)
+
+            Dim param As New JObject
+            param.Add("roomid", _RoomId)
+            param.Add("uid", 100000000000000 + CLng((200000000000000 * Utils.rand.NextDouble())))
+
+
+            SendSocketData(sck, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(param)))
+            SendSocketHeartBeat(sck)
+            Do
+                length = sck.Receive(buffer)
+                'SendSocketHeartBeat(sck)
+                If length <> 0 Then ParseSocketData(buffer, length)
+            Loop
+
+        Catch ex As Exception
+
+        Finally
+            sck.Disconnect(True)
+        End Try
+    End Sub
+    Private Sub SendSocketData(ByRef socket As Socket, ByVal data() As Byte)
+        '套接字 v1.0
+        Dim data_length As UInteger = 0
+        If data IsNot Nothing Then data_length = data.Length
+        Dim total_len As UInteger = 16 + data_length
+        Dim head_len As UShort = 16
+        Dim version As UShort = 1
+        Dim request_type As UInteger = 7
+        Dim param5 As UInteger = 1
+
+        Dim buf As New MemoryStream
+        WriteUI32(buf, total_len)
+        WriteUI16(buf, head_len)
+        WriteUI16(buf, version)
+        WriteUI32(buf, request_type)
+        WriteUI32(buf, param5)
+        If data_length > 0 Then buf.Write(data, 0, data_length)
+        buf.Position = 0
+        Dim post_data(total_len - 1) As Byte
+        buf.Read(post_data, 0, total_len)
+
+        socket.Send(post_data)
+        buf.Close()
+    End Sub
+    Private Sub SendSocketHeartBeat(ByRef socket As Socket)
+        Dim total_len As UInteger = 16
+        Dim head_len As UShort = 16
+        Dim version As UShort = 1
+        Dim request_type As UInteger = 2
+        Dim param5 As UInteger = 1
+
+        Dim buf As New MemoryStream
+        WriteUI32(buf, total_len)
+        WriteUI16(buf, head_len)
+        WriteUI16(buf, version)
+        WriteUI32(buf, request_type)
+        WriteUI32(buf, param5)
+
+        buf.Position = 0
+        Dim post_data(15) As Byte
+        buf.Read(post_data, 0, 16)
+
+        socket.Send(post_data)
+        buf.Close()
+    End Sub
+    Public Event ReceivedOnlinePeople(ByVal people As Integer)
+    Private Sub ParseSocketData(ByVal data() As Byte, ByVal length As Integer)
+
+        '3: online people
+        '5: msg
+        Dim ms As New MemoryStream
+        ms.Write(data, 0, length)
+        ms.Position = 0
+
+        While ms.Position < ms.Length
+            Dim total_len As UInteger = ReadUI32(ms)
+            Dim head_len As UShort = ReadUI16(ms)
+            If head_len = 0 Then
+                ms.Close()
+                Return
+            End If
+            Dim version As UShort = ReadUI16(ms)
+            Dim request_type As UInteger = ReadUI32(ms)
+            Dim param5 As UInteger = ReadUI32(ms)
+
+            Select Case request_type
+                Case 3
+                    RaiseEvent ReceivedOnlinePeople(ReadUI32(ms))
+
+                Case 5
+                    Dim buf(total_len - head_len + 1) As Byte
+                    ms.Read(buf, 0, total_len - head_len)
+                    Dim str As String = Encoding.UTF8.GetString(buf)
+                    Dim str_obj As JObject = JsonConvert.DeserializeObject(str)
+
+                    Select Case str_obj.Value(Of String)("cmd")
+
+                        Case "DANMU_MSG"
+                            '暂时先撸这么多参数吧
+
+                            '弹幕颜色(RRGGBB)
+                            Dim color As UInteger = str_obj("info").Value(Of JArray)(0)(3)
+                            '弹幕发送UNIX时间戳
+                            Dim post_time As UInteger = str_obj("info").Value(Of JArray)(0)(4)
+                            '弹幕内容
+                            Dim msg As String = str_obj("info").Value(Of String)(1)
+                            '用户名称
+                            Dim user_name As String = str_obj("info").Value(Of JArray)(2)(1)
+                            '用户hash id
+                            Dim user_hashid As String = str_obj("info").Value(Of JArray)(0)(7)
+                            '勋章等级、名称以及来源up主
+                            Dim medal_level As Integer = str_obj("info").Value(Of JArray)(3)(0)
+                            Dim medal_name As String = str_obj("info").Value(Of JArray)(3)(1)
+                            Dim medal_up_name As String = str_obj("info").Value(Of JArray)(3)(2)
+
+                            RaiseEvent ReceivedComment(post_time, user_name, msg)
+                        Case "SEND_GIFT"
+
+                        Case "WELCOME"
+
+                        Case "SYS_MSG"
+
+                        Case Else
+
+                    End Select
+                    'RaiseEvent ReceivedComment(str)
+            End Select
+        End While
+
+        ms.Close()
+    End Sub
+    Public Sub AsyncStartReceiveComment()
+        If _CommentThd.ThreadState = ThreadState.Stopped Or _CommentThd.ThreadState = ThreadState.Aborted Then
+            _CommentThd = New Thread(AddressOf CommentThdCallback)
+            _CommentThd.Name = "Bili Live Comment Receiving Thread"
+        End If
+
+        If _CommentThd.ThreadState = ThreadState.Unstarted Then
+            _CommentThd.Start()
+        End If
+    End Sub
+    Public Event ReceivedComment(ByVal unixTimestamp As Long, ByVal username As String, ByVal msg As String)
+    Public Sub AsyncStopReceiveComment()
+        If _workThd.ThreadState = ThreadState.Running Then
+            _workThd.Abort()
+        End If
+    End Sub
 End Class
 ''' <summary>
 ''' b站登录函数[附带RSA加密模块]
 ''' </summary>
 ''' <remarks></remarks>
 Public Module Bilibili_Login
-    Public Const LOGIN_URL As String = "https://account.bilibili.com/login/dologin"
+    Public Const LOGIN_URL As String = "https://passport.bilibili.com/login/dologin"
     Public Const LOGOUT_URL As String = "https://account.bilibili.com/login"
-    Public Const BACKUP_LOGIN_URL As String = "https://account.bilibili.com/ajax/miniLogin/login"
-    Public Const LOGIN_PUBLIC_KEY As String = "https://account.bilibili.com/login?act=getkey"
+    Public Const BACKUP_LOGIN_URL As String = "https://passport.bilibili.com/ajax/miniLogin/login"
+    Public Const LOGIN_PUBLIC_KEY As String = "https://passport.bilibili.com/login?act=getkey"
     Public Const BILIBILI_MAIN_PAGE As String = "http://www.bilibili.com"
-    Public Const CAPTCHA_URL As String = "https://account.bilibili.com/captcha"
+    Public Const CAPTCHA_URL As String = "https://passport.bilibili.com/captcha"
     Public Const API_MY_INFO As String = "http://api.bilibili.com/myinfo"
-    '2015/12/31  RSA login succeeded
-    Public Function Login(ByVal userid As String, ByVal pwd As String, ByVal captcha As String) As Boolean
+    '2015/12/31  RSA 加密登录成功
+    '2016/03/25  将域名 account.bilibili.com 换为 passport.bilibili.com ，登录成功
+
+    ''' <summary>
+    ''' 使用主站登录模块
+    ''' </summary>
+    ''' <param name="userid">用户ID</param>
+    ''' <param name="pwd">密码</param>
+    ''' <param name="captcha">验证码</param>
+    ''' <returns>登录是否成功</returns>
+    ''' <remarks></remarks>
+    Public Function Login(ByVal userid As String, ByVal pwd As String, ByVal captcha As String, Optional ByRef login_result As String = Nothing) As Boolean
         Dim param As New Parameters
         param.Add("act", "login")
-        param.Add("userid", ToURLCharacter(userid))
+        param.Add("userid", userid)
         param.Add("keeptime", 604800)
 
-        Form1.DebugOutput("用户名: " & userid)
+        'Form1.DebugOutput("用户名: " & userid)
 
         'RSA加密
         Dim req As New NetStream
 
-        Form1.DebugOutput("获取RSA公钥URL: " & LOGIN_PUBLIC_KEY)
+        'Form1.DebugOutput("获取RSA公钥URL: " & LOGIN_PUBLIC_KEY)
         req.HttpGet(LOGIN_PUBLIC_KEY)
         Dim loginRequest As String = ReadToEnd(req.Stream)
         Dim loginRequest2 As JObject = JsonConvert.DeserializeObject(loginRequest)
@@ -590,33 +806,45 @@ Public Module Bilibili_Login
 
         pwd = Convert.ToBase64String(password)
 
-        param.Add("pwd", ToURLCharacter(pwd))
+        param.Add("pwd", pwd)
 
         'Form1.DebugOutput("加密后的密码: " & pwd)
 
         param.Add("vdcode", captcha)
 
 
-        Form1.DebugOutput("发送登录信息...")
+        'Form1.DebugOutput("发送登录信息...")
 
         req.HttpPost(LOGIN_URL, param)
         Dim str As String = ReadToEnd(req.Stream)
         req.Close()
 
-        Form1.DebugOutput("返回数据: " & str)
+        If login_result IsNot Nothing Then
+            login_result = str
+        End If
+        'Form1.DebugOutput("返回数据: " & str)
 
         Return CheckLogin()
     End Function
-    Public Function LoginBackup(ByVal userid As String, ByVal pwd As String, Optional ByVal captcha As String = "") As Boolean
-        Dim param As New Parameters
-        param.Add("userid", ToURLCharacter(userid))
 
-        Form1.DebugOutput("用户名: " & userid)
+    ''' <summary>
+    ''' 使用精简登录模块，若密码输入不出错，则不需输入验证码
+    ''' </summary>
+    ''' <param name="userid">用户ID</param>
+    ''' <param name="pwd">密码</param>
+    ''' <param name="captcha">验证码</param>
+    ''' <returns>登录是否成功</returns>
+    ''' <remarks></remarks>
+    Public Function LoginBackup(ByVal userid As String, ByVal pwd As String, Optional ByVal captcha As String = "", Optional ByRef login_result As String = Nothing) As Boolean
+        Dim param As New Parameters
+        param.Add("userid", userid)
+
+        'Form1.DebugOutput("用户名: " & userid)
 
         'RSA加密
         Dim req As New NetStream
 
-        Form1.DebugOutput("获取RSA公钥URL: " & LOGIN_PUBLIC_KEY)
+        'Form1.DebugOutput("获取RSA公钥URL: " & LOGIN_PUBLIC_KEY)
         req.HttpGet(LOGIN_PUBLIC_KEY)
         Dim loginRequest As String = ReadToEnd(req.Stream)
         Dim loginRequest2 As JObject = JsonConvert.DeserializeObject(loginRequest)
@@ -639,7 +867,7 @@ Public Module Bilibili_Login
 
         pwd = Convert.ToBase64String(password)
 
-        param.Add("pwd", ToURLCharacter(pwd))
+        param.Add("pwd", pwd)
 
         'Form1.DebugOutput("加密后的密码: " & pwd)
 
@@ -647,17 +875,25 @@ Public Module Bilibili_Login
         param.Add("keep", 1)
 
 
-        Form1.DebugOutput("发送登录信息...")
+        'Form1.DebugOutput("发送登录信息...")
 
 
         req.HttpPost(BACKUP_LOGIN_URL, param)
         Dim str As String = ReadToEnd(req.Stream)
         req.Close()
 
-        Form1.DebugOutput("返回数据: " & str.Replace(vbCr, "").Replace(vbLf, ""))
+        If login_result IsNot Nothing Then
+            login_result = str
+        End If
+        'Form1.DebugOutput("返回数据: " & str.Replace(vbCr, "").Replace(vbLf, ""))
 
         Return CheckLogin()
     End Function
+    ''' <summary>
+    ''' 获取验证码
+    ''' </summary>
+    ''' <returns>返回验证码图像</returns>
+    ''' <remarks></remarks>
     Public Function GetCaptchaImage() As Image
         Dim req As New NetStream
         req.HttpGet(CAPTCHA_URL)
@@ -665,28 +901,38 @@ Public Module Bilibili_Login
         req.Close()
         Return img
     End Function
+    ''' <summary>
+    ''' 查看登录是否成功
+    ''' </summary>
+    ''' <returns></returns>
+    ''' <remarks></remarks>
     Public Function CheckLogin() As Boolean
         Dim req As New NetStream
         req.HttpGet(API_MY_INFO)
         Dim str As String = ReadToEnd(req.Stream)
         req.Close()
         str = str.Replace(vbCr, "").Replace(vbLf, "")
-        Form1.DebugOutput("API请求: [登录信息]: " & API_MY_INFO & vbCrLf & JsonConvert.DeserializeObject(str).ToString)
+        'Form1.DebugOutput("API请求: [登录信息]: " & API_MY_INFO & vbCrLf & JsonConvert.DeserializeObject(str).ToString)
         Return If(InStr(str, "-101"), False, True)
     End Function
+    ''' <summary>
+    ''' 退出登录
+    ''' </summary>
+    ''' <returns>返回当前是否登录</returns>
+    ''' <remarks></remarks>
     Public Function LogOut() As Boolean
         Dim url As String = LOGOUT_URL
         Dim param As New Parameters
         param.Add("act", "exit")
         Dim req As New NetStream
 
-        Form1.DebugOutput("发送注销信息...")
+        'Form1.DebugOutput("发送注销信息...")
 
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
         req.Close()
 
-        Form1.DebugOutput("返回数据:" & str)
+        'Form1.DebugOutput("返回数据:" & str)
 
         Return CheckLogin()
     End Function

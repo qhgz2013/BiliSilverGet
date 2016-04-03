@@ -30,13 +30,14 @@ Partial Class frmLogin
         Me.Label3 = New System.Windows.Forms.Label()
         Me.Label2 = New System.Windows.Forms.Label()
         Me.PictureBox1 = New System.Windows.Forms.PictureBox()
+        Me.Label1 = New System.Windows.Forms.Label()
         CType(Me.PictureBox1, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SuspendLayout()
         '
         'LinkLabel1
         '
         Me.LinkLabel1.AutoSize = True
-        Me.LinkLabel1.Location = New System.Drawing.Point(140, 109)
+        Me.LinkLabel1.Location = New System.Drawing.Point(13, 153)
         Me.LinkLabel1.Name = "LinkLabel1"
         Me.LinkLabel1.Size = New System.Drawing.Size(65, 12)
         Me.LinkLabel1.TabIndex = 5
@@ -45,14 +46,14 @@ Partial Class frmLogin
         '
         'TextBox4
         '
-        Me.TextBox4.Location = New System.Drawing.Point(140, 85)
+        Me.TextBox4.Location = New System.Drawing.Point(13, 120)
         Me.TextBox4.Name = "TextBox4"
         Me.TextBox4.Size = New System.Drawing.Size(78, 21)
         Me.TextBox4.TabIndex = 3
         '
         'Button1
         '
-        Me.Button1.Location = New System.Drawing.Point(224, 88)
+        Me.Button1.Location = New System.Drawing.Point(125, 120)
         Me.Button1.Name = "Button1"
         Me.Button1.Size = New System.Drawing.Size(120, 54)
         Me.Button1.TabIndex = 4
@@ -61,7 +62,7 @@ Partial Class frmLogin
         '
         'TextBox3
         '
-        Me.TextBox3.Location = New System.Drawing.Point(60, 49)
+        Me.TextBox3.Location = New System.Drawing.Point(61, 81)
         Me.TextBox3.Name = "TextBox3"
         Me.TextBox3.PasswordChar = Global.Microsoft.VisualBasic.ChrW(42)
         Me.TextBox3.Size = New System.Drawing.Size(240, 21)
@@ -69,7 +70,7 @@ Partial Class frmLogin
         '
         'TextBox2
         '
-        Me.TextBox2.Location = New System.Drawing.Point(60, 12)
+        Me.TextBox2.Location = New System.Drawing.Point(61, 44)
         Me.TextBox2.Name = "TextBox2"
         Me.TextBox2.Size = New System.Drawing.Size(240, 21)
         Me.TextBox2.TabIndex = 1
@@ -77,7 +78,7 @@ Partial Class frmLogin
         'Label3
         '
         Me.Label3.AutoSize = True
-        Me.Label3.Location = New System.Drawing.Point(10, 52)
+        Me.Label3.Location = New System.Drawing.Point(11, 84)
         Me.Label3.Name = "Label3"
         Me.Label3.Size = New System.Drawing.Size(29, 12)
         Me.Label3.TabIndex = 12
@@ -86,7 +87,7 @@ Partial Class frmLogin
         'Label2
         '
         Me.Label2.AutoSize = True
-        Me.Label2.Location = New System.Drawing.Point(10, 15)
+        Me.Label2.Location = New System.Drawing.Point(11, 47)
         Me.Label2.Name = "Label2"
         Me.Label2.Size = New System.Drawing.Size(29, 12)
         Me.Label2.TabIndex = 11
@@ -94,17 +95,28 @@ Partial Class frmLogin
         '
         'PictureBox1
         '
-        Me.PictureBox1.Location = New System.Drawing.Point(12, 85)
+        Me.PictureBox1.Location = New System.Drawing.Point(13, 180)
         Me.PictureBox1.Name = "PictureBox1"
-        Me.PictureBox1.Size = New System.Drawing.Size(122, 77)
+        Me.PictureBox1.Size = New System.Drawing.Size(136, 77)
+        Me.PictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom
         Me.PictureBox1.TabIndex = 10
         Me.PictureBox1.TabStop = False
+        '
+        'Label1
+        '
+        Me.Label1.AutoSize = True
+        Me.Label1.Location = New System.Drawing.Point(11, 15)
+        Me.Label1.Name = "Label1"
+        Me.Label1.Size = New System.Drawing.Size(293, 12)
+        Me.Label1.TabIndex = 13
+        Me.Label1.Text = "注意：本软件仅限测试用，如账号密码泄露，概不负责"
         '
         'frmLogin
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 12.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(355, 175)
+        Me.ClientSize = New System.Drawing.Size(355, 263)
+        Me.Controls.Add(Me.Label1)
         Me.Controls.Add(Me.LinkLabel1)
         Me.Controls.Add(Me.TextBox4)
         Me.Controls.Add(Me.Button1)
@@ -128,4 +140,5 @@ Partial Class frmLogin
     Friend WithEvents Label3 As System.Windows.Forms.Label
     Friend WithEvents Label2 As System.Windows.Forms.Label
     Friend WithEvents PictureBox1 As System.Windows.Forms.PictureBox
+    Friend WithEvents Label1 As System.Windows.Forms.Label
 End Class

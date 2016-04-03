@@ -10,7 +10,7 @@
             Public Const DEFAULT_GET_METHOD As String = "GET"
             Public Const DEFAULT_POST_METHOD As String = "POST"
             '默认超时时间(ms)
-            Public Const DEFAULT_TIMEOUT As Integer = 60000
+            Public Const DEFAULT_TIMEOUT As Integer = 5000
             '默认代理URL
             Public Const DEFAULT_PROXY_URL As String = ""
             '默认User Agent
@@ -379,6 +379,9 @@
                                 domain &= header(i)
                                 i += 1
                             End While
+                            domain = domain.Trim("""")
+                            If String.IsNullOrEmpty(domain) Then has_domain = False
+
                             If i < Len(header) AndAlso header(i) = ";" Then i += 1
                             'httponly
                         ElseIf Mid(header, i + 1, 8).ToLower = "httponly" Then
