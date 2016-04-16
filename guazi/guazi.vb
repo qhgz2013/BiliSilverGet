@@ -428,7 +428,9 @@ Public Class guazi
         _workThd.Name = "Bili Live Auto Grabbing Silver Thread"
 
         _CommentThd = New Thread(AddressOf CommentThdCallback)
-        _CommentThd.Name = "Bili Live Comment Receiving Thread"
+        _CommentThd.Name = "Bili Live Socket Thread"
+        _CommentHeartBeat = New Thread(AddressOf CommentHeartBeatCallBack)
+        _CommentHeartBeat.Name = "Bili Live Socket Heartbeat Thread"
 
         _RoomId = roomid
         _RoomInfo = Nothing
@@ -487,7 +489,7 @@ Public Class guazi
                     get_player_bag(True)
 
                 Catch ex As Exception
-                    RaiseEvent DebugOutput("ERR] 抛出异常: " & ex.ToString)
+                    RaiseEvent DebugOutput("[ERR] 抛出异常: " & ex.ToString)
                 End Try
             End Sub)
 
@@ -530,6 +532,7 @@ Public Class guazi
             _RoomId = value
             get_room_info()
             AsyncStopDownloadStream()
+            AsyncStopReceiveComment()
         End Set
     End Property
 
@@ -588,39 +591,56 @@ Public Class guazi
 
     '弹幕
     Private _CommentThd As Thread
+    Private _CommentHeartBeat As Thread
     Private Const DEFAULT_COMMENT_HOST As String = "livecmt-1.bilibili.com"
     Private Const DEFAULT_COMMENT_PORT As Integer = 788
+    Private _CommentSocket As Socket
+    Private Sub CommentHeartBeatCallBack()
+        Dim next_update_time As Date = Now.AddSeconds(10)
+
+        Do
+            Dim ts As TimeSpan = next_update_time - Now
+            If ts.TotalMilliseconds > 0 Then
+                Thread.Sleep(ts)
+                next_update_time = next_update_time.AddSeconds(10)
+            End If
+
+            If _CommentSocket IsNot Nothing AndAlso _CommentSocket.Connected = True Then
+                SendSocketHeartBeat()
+            End If
+        Loop
+    End Sub
     Private Sub CommentThdCallback()
         If _RoomId <= 0 Then Return
         Dim ipaddr As IPAddress = Dns.GetHostAddresses(DEFAULT_COMMENT_HOST)(0)
         Dim ip_ed As IPEndPoint = New IPEndPoint(ipaddr, DEFAULT_COMMENT_PORT)
 
-        Dim sck As New Sockets.Socket(Sockets.AddressFamily.InterNetwork, Sockets.SocketType.Stream, Sockets.ProtocolType.Tcp)
+        _CommentSocket = New Sockets.Socket(Sockets.AddressFamily.InterNetwork, Sockets.SocketType.Stream, Sockets.ProtocolType.Tcp)
         Dim buffer(8191) As Byte
         Dim length As Integer = 0
         Try
-            sck.Connect(ip_ed)
+            _CommentSocket.Connect(ip_ed)
 
             Dim param As New JObject
             param.Add("roomid", _RoomId)
             param.Add("uid", 100000000000000 + CLng((200000000000000 * Utils.rand.NextDouble())))
 
 
-            SendSocketData(sck, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(param)))
-            SendSocketHeartBeat(sck)
+            SendSocketData(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(param)))
+            SendSocketHeartBeat()
             Do
-                length = sck.Receive(buffer)
-                'SendSocketHeartBeat(sck)
+                length = _CommentSocket.Receive(buffer)
                 If length <> 0 Then ParseSocketData(buffer, length)
             Loop
 
         Catch ex As Exception
-
+            RaiseEvent DebugOutput("[ERR]" & ex.ToString)
         Finally
-            sck.Disconnect(True)
+            _CommentSocket.Disconnect(True)
+            _CommentSocket = Nothing
         End Try
     End Sub
-    Private Sub SendSocketData(ByRef socket As Socket, ByVal data() As Byte)
+    Private Sub SendSocketData(ByVal data() As Byte)
         '套接字 v1.0
         Dim data_length As UInteger = 0
         If data IsNot Nothing Then data_length = data.Length
@@ -640,11 +660,12 @@ Public Class guazi
         buf.Position = 0
         Dim post_data(total_len - 1) As Byte
         buf.Read(post_data, 0, total_len)
-
-        socket.Send(post_data)
+        If _CommentSocket IsNot Nothing Then
+            _CommentSocket.Send(post_data)
+        End If
         buf.Close()
     End Sub
-    Private Sub SendSocketHeartBeat(ByRef socket As Socket)
+    Private Sub SendSocketHeartBeat()
         Dim total_len As UInteger = 16
         Dim head_len As UShort = 16
         Dim version As UShort = 1
@@ -661,11 +682,15 @@ Public Class guazi
         buf.Position = 0
         Dim post_data(15) As Byte
         buf.Read(post_data, 0, 16)
-
-        socket.Send(post_data)
+        If _CommentSocket IsNot Nothing Then
+            _CommentSocket.Send(post_data)
+        End If
         buf.Close()
     End Sub
     Public Event ReceivedOnlinePeople(ByVal people As Integer)
+    Public Event ReceivedComment(ByVal unixTimestamp As Long, ByVal username As String, ByVal msg As String)
+    Public Event ReceivedGiftSent(ByVal unixTimestamp As Long, ByVal giftName As String, ByVal giftId As Integer, ByVal giftNum As Integer, ByVal user As String)
+    Public Event ReceivedWelcome(ByVal admin As Boolean, ByVal vip As Boolean, ByVal name As String)
     Private Sub ParseSocketData(ByVal data() As Byte, ByVal length As Integer)
 
         '3: online people
@@ -682,15 +707,16 @@ Public Class guazi
                 Return
             End If
             Dim version As UShort = ReadUI16(ms)
-            Dim request_type As UInteger = ReadUI32(ms)
+            'Dim param3 As UShort = ReadUI16(ms)
+            Dim type As UInteger = ReadUI32(ms)
             Dim param5 As UInteger = ReadUI32(ms)
 
-            Select Case request_type
+            Select Case type
                 Case 3
                     RaiseEvent ReceivedOnlinePeople(ReadUI32(ms))
 
                 Case 5
-                    Dim buf(total_len - head_len + 1) As Byte
+                    Dim buf(total_len - head_len - 1) As Byte
                     ms.Read(buf, 0, total_len - head_len)
                     Dim str As String = Encoding.UTF8.GetString(buf)
                     Dim str_obj As JObject = JsonConvert.DeserializeObject(str)
@@ -711,15 +737,44 @@ Public Class guazi
                             '用户hash id
                             Dim user_hashid As String = str_obj("info").Value(Of JArray)(0)(7)
                             '勋章等级、名称以及来源up主
-                            Dim medal_level As Integer = str_obj("info").Value(Of JArray)(3)(0)
-                            Dim medal_name As String = str_obj("info").Value(Of JArray)(3)(1)
-                            Dim medal_up_name As String = str_obj("info").Value(Of JArray)(3)(2)
+                            Dim medal_level As Integer
+                            Dim medal_name As String
+                            Dim medal_up_name As String
+
+                            If str_obj("info").Value(Of JArray)(3).Count Then
+                                medal_level = str_obj("info").Value(Of JArray)(3)(0)
+                                medal_name = str_obj("info").Value(Of JArray)(3)(1)
+                                medal_up_name = str_obj("info").Value(Of JArray)(3)(2)
+                            End If
 
                             RaiseEvent ReceivedComment(post_time, user_name, msg)
                         Case "SEND_GIFT"
+                            Dim gift_name As String = str_obj("data").Value(Of String)("giftName")
+                            Dim gift_num As Integer = str_obj("data").Value(Of Integer)("num")
+                            Dim user_name As String = str_obj("data").Value(Of String)("uname")
+                            'Dim rcost As Integer = str_obj("data").Value(Of Integer)("rcost")
+                            'Dim uid As Integer = str_obj("data").Value(Of Integer)("uid")
+                            'Dim top_list As JArray = str_obj("data").Value(Of JArray)("top_list")
+                            Dim timestamp As Long = str_obj("data").Value(Of Long)("timestamp")
+                            Dim gift_id As Integer = str_obj("data").Value(Of Integer)("giftId")
+                            Dim gift_type As Integer = str_obj("data").Value(Of Integer)("giftType")
+                            Dim action As String = str_obj("data").Value(Of String)("action")
+                            Dim super As Integer = str_obj("data").Value(Of Integer)("super")
+                            Dim price As Integer = str_obj("data").Value(Of Integer)("price")
+                            Dim rnd As String = str_obj("data").Value(Of String)("rnd")
+                            Dim new_medal As Integer = str_obj("data").Value(Of Integer)("newMedal")
+                            'Dim guardian_score As Integer = str_obj("data").Value(Of Integer)("guardianScore")
+                            Dim room_id As Integer = str_obj.Value(Of Integer)("roomid")
 
+                            RaiseEvent ReceivedGiftSent(timestamp, gift_name, gift_id, gift_num, user_name)
                         Case "WELCOME"
+                            Dim is_admin As Integer = str_obj("data").Value(Of Integer)("isadmin")
+                            Dim is_vip As Integer = str_obj("data").Value(Of Integer)("vip")
+                            Dim uid As Integer = str_obj("data").Value(Of Integer)("uid")
+                            Dim user_name As String = str_obj("data").Value(Of String)("uname")
+                            Dim room_id As Integer = str_obj.Value(Of Integer)("roomid")
 
+                            RaiseEvent ReceivedWelcome(is_admin, is_vip, user_name)
                         Case "SYS_MSG"
 
                         Case Else
@@ -733,18 +788,22 @@ Public Class guazi
     End Sub
     Public Sub AsyncStartReceiveComment()
         If _CommentThd.ThreadState = ThreadState.Stopped Or _CommentThd.ThreadState = ThreadState.Aborted Then
+
             _CommentThd = New Thread(AddressOf CommentThdCallback)
-            _CommentThd.Name = "Bili Live Comment Receiving Thread"
+            _CommentThd.Name = "Bili Live Socket Thread"
+            _CommentHeartBeat = New Thread(AddressOf CommentHeartBeatCallBack)
+            _CommentHeartBeat.Name = "Bili Live Socket Heartbeat Thread"
         End If
 
         If _CommentThd.ThreadState = ThreadState.Unstarted Then
             _CommentThd.Start()
+            _CommentHeartBeat.Start()
         End If
     End Sub
-    Public Event ReceivedComment(ByVal unixTimestamp As Long, ByVal username As String, ByVal msg As String)
     Public Sub AsyncStopReceiveComment()
         If _workThd.ThreadState = ThreadState.Running Then
             _workThd.Abort()
+            _CommentHeartBeat.Abort()
         End If
     End Sub
 End Class

@@ -44,21 +44,25 @@ Partial Class Form1
         Me.testButton = New System.Windows.Forms.LinkLabel()
         Me.Timer1 = New System.Windows.Forms.Timer(Me.components)
         Me.GroupBox2 = New System.Windows.Forms.GroupBox()
+        Me.lblSize = New System.Windows.Forms.Label()
+        Me.lblDownloadTime = New System.Windows.Forms.Label()
         Me.lblSpeed = New System.Windows.Forms.Label()
         Me.StartRecord = New System.Windows.Forms.Button()
         Me.bRoomId = New System.Windows.Forms.TextBox()
         Me.Label2 = New System.Windows.Forms.Label()
         Me.lblLogout = New System.Windows.Forms.LinkLabel()
         Me.SaveFileDialog1 = New System.Windows.Forms.SaveFileDialog()
-        Me.lblDownloadTime = New System.Windows.Forms.Label()
-        Me.lblSize = New System.Windows.Forms.Label()
+        Me.GroupBox3 = New System.Windows.Forms.GroupBox()
+        Me.OnlinePeople = New System.Windows.Forms.Label()
+        Me.ReceiveSocket = New System.Windows.Forms.CheckBox()
         Me.GroupBox1.SuspendLayout()
         Me.GroupBox2.SuspendLayout()
+        Me.GroupBox3.SuspendLayout()
         Me.SuspendLayout()
         '
         'TextBox1
         '
-        Me.TextBox1.Location = New System.Drawing.Point(6, 383)
+        Me.TextBox1.Location = New System.Drawing.Point(507, 305)
         Me.TextBox1.Multiline = True
         Me.TextBox1.Name = "TextBox1"
         Me.TextBox1.ScrollBars = System.Windows.Forms.ScrollBars.Both
@@ -69,7 +73,7 @@ Partial Class Form1
         'Label1
         '
         Me.Label1.AutoSize = True
-        Me.Label1.Location = New System.Drawing.Point(6, 236)
+        Me.Label1.Location = New System.Drawing.Point(507, 11)
         Me.Label1.Name = "Label1"
         Me.Label1.Size = New System.Drawing.Size(53, 12)
         Me.Label1.TabIndex = 2
@@ -79,9 +83,9 @@ Partial Class Form1
         '
         Me.ListView1.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.时间, Me.信息})
         Me.ListView1.FullRowSelect = True
-        Me.ListView1.Location = New System.Drawing.Point(6, 251)
+        Me.ListView1.Location = New System.Drawing.Point(507, 26)
         Me.ListView1.Name = "ListView1"
-        Me.ListView1.Size = New System.Drawing.Size(498, 126)
+        Me.ListView1.Size = New System.Drawing.Size(498, 273)
         Me.ListView1.TabIndex = 10
         Me.ListView1.UseCompatibleStateImageBehavior = False
         Me.ListView1.View = System.Windows.Forms.View.Details
@@ -89,7 +93,7 @@ Partial Class Form1
         '时间
         '
         Me.时间.Text = "时间"
-        Me.时间.Width = 91
+        Me.时间.Width = 77
         '
         '信息
         '
@@ -231,7 +235,7 @@ Partial Class Form1
         'testButton
         '
         Me.testButton.AutoSize = True
-        Me.testButton.Location = New System.Drawing.Point(235, 236)
+        Me.testButton.Location = New System.Drawing.Point(736, 11)
         Me.testButton.Name = "testButton"
         Me.testButton.Size = New System.Drawing.Size(53, 12)
         Me.testButton.TabIndex = 12
@@ -253,6 +257,22 @@ Partial Class Form1
         Me.GroupBox2.TabIndex = 13
         Me.GroupBox2.TabStop = False
         Me.GroupBox2.Text = "坑爹脚本2:录播"
+        '
+        'lblSize
+        '
+        Me.lblSize.AutoSize = True
+        Me.lblSize.Location = New System.Drawing.Point(353, 31)
+        Me.lblSize.Name = "lblSize"
+        Me.lblSize.Size = New System.Drawing.Size(0, 12)
+        Me.lblSize.TabIndex = 2
+        '
+        'lblDownloadTime
+        '
+        Me.lblDownloadTime.AutoSize = True
+        Me.lblDownloadTime.Location = New System.Drawing.Point(242, 31)
+        Me.lblDownloadTime.Name = "lblDownloadTime"
+        Me.lblDownloadTime.Size = New System.Drawing.Size(0, 12)
+        Me.lblDownloadTime.TabIndex = 1
         '
         'lblSpeed
         '
@@ -302,27 +322,42 @@ Partial Class Form1
         Me.SaveFileDialog1.DefaultExt = "flv"
         Me.SaveFileDialog1.Filter = "FLV视频文件|*.flv|所有文件|*.*"
         '
-        'lblDownloadTime
+        'GroupBox3
         '
-        Me.lblDownloadTime.AutoSize = True
-        Me.lblDownloadTime.Location = New System.Drawing.Point(242, 31)
-        Me.lblDownloadTime.Name = "lblDownloadTime"
-        Me.lblDownloadTime.Size = New System.Drawing.Size(0, 12)
-        Me.lblDownloadTime.TabIndex = 1
+        Me.GroupBox3.Controls.Add(Me.OnlinePeople)
+        Me.GroupBox3.Controls.Add(Me.ReceiveSocket)
+        Me.GroupBox3.Location = New System.Drawing.Point(8, 219)
+        Me.GroupBox3.Name = "GroupBox3"
+        Me.GroupBox3.Size = New System.Drawing.Size(493, 163)
+        Me.GroupBox3.TabIndex = 18
+        Me.GroupBox3.TabStop = False
+        Me.GroupBox3.Text = "坑爹脚本3:直播弹幕"
         '
-        'lblSize
+        'OnlinePeople
         '
-        Me.lblSize.AutoSize = True
-        Me.lblSize.Location = New System.Drawing.Point(353, 31)
-        Me.lblSize.Name = "lblSize"
-        Me.lblSize.Size = New System.Drawing.Size(0, 12)
-        Me.lblSize.TabIndex = 2
+        Me.OnlinePeople.AutoSize = True
+        Me.OnlinePeople.Location = New System.Drawing.Point(13, 37)
+        Me.OnlinePeople.Name = "OnlinePeople"
+        Me.OnlinePeople.Size = New System.Drawing.Size(59, 12)
+        Me.OnlinePeople.TabIndex = 1
+        Me.OnlinePeople.Text = "在线人数:"
+        '
+        'ReceiveSocket
+        '
+        Me.ReceiveSocket.AutoSize = True
+        Me.ReceiveSocket.Location = New System.Drawing.Point(15, 18)
+        Me.ReceiveSocket.Name = "ReceiveSocket"
+        Me.ReceiveSocket.Size = New System.Drawing.Size(72, 16)
+        Me.ReceiveSocket.TabIndex = 0
+        Me.ReceiveSocket.Text = "接受信息"
+        Me.ReceiveSocket.UseVisualStyleBackColor = True
         '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 12.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(517, 472)
+        Me.ClientSize = New System.Drawing.Size(1095, 472)
+        Me.Controls.Add(Me.GroupBox3)
         Me.Controls.Add(Me.lblLogout)
         Me.Controls.Add(Me.bRoomId)
         Me.Controls.Add(Me.Label2)
@@ -332,12 +367,15 @@ Partial Class Form1
         Me.Controls.Add(Me.ListView1)
         Me.Controls.Add(Me.Label1)
         Me.Controls.Add(Me.TextBox1)
+        Me.MaximizeBox = False
         Me.Name = "Form1"
         Me.Text = "Form1"
         Me.GroupBox1.ResumeLayout(False)
         Me.GroupBox1.PerformLayout()
         Me.GroupBox2.ResumeLayout(False)
         Me.GroupBox2.PerformLayout()
+        Me.GroupBox3.ResumeLayout(False)
+        Me.GroupBox3.PerformLayout()
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -371,5 +409,8 @@ Partial Class Form1
     Friend WithEvents lblSpeed As System.Windows.Forms.Label
     Friend WithEvents lblSize As System.Windows.Forms.Label
     Friend WithEvents lblDownloadTime As System.Windows.Forms.Label
+    Friend WithEvents GroupBox3 As System.Windows.Forms.GroupBox
+    Friend WithEvents ReceiveSocket As System.Windows.Forms.CheckBox
+    Friend WithEvents OnlinePeople As System.Windows.Forms.Label
 
 End Class

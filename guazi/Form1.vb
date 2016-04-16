@@ -11,6 +11,9 @@ Public Class Form1
     End Sub
     Friend Delegate Sub _debugOutputSafe(ByVal s As String)
     Friend Sub _debugOutput(ByVal s As String)
+        If ListView1.Items.Count > 200 Then
+            ListView1.Items.RemoveAt(0)
+        End If
         ListView1.Items.Add(Now.ToLongTimeString)
         ListView1.Items(ListView1.Items.Count - 1).SubItems.Add(s)
         ListView1.SelectedItems.Clear()
@@ -119,10 +122,10 @@ Public Class Form1
         Utils.NetUtils.LoadCookie(Application.StartupPath & "\cookie.dat")
         'login check
         If Not CheckLogin() Then
-            DebugOutput("状态：未登录")
+            'DebugOutput("状态：未登录")
             frmLogin.ShowDialog()
         Else
-            DebugOutput("状态：已经登录")
+            'DebugOutput("状态：已经登录")
         End If
 
         _expireTime = Date.MinValue
@@ -134,8 +137,6 @@ Public Class Form1
             goFuck.PerformClick()
         End If
 
-        'test
-        gz.AsyncStartReceiveComment()
     End Sub
 
 
@@ -145,16 +146,6 @@ Public Class Form1
     End Sub
 
 
-    'log out
-    Private Sub UserLogout(sender As Object, e As LinkLabelLinkClickedEventArgs)
-        If Not LogOut() Then
-            DebugOutput("退出登录成功")
-            frmLogin.ShowDialog()
-        Else
-            DebugOutput("退出登录失败")
-            MessageBox.Show("退出登录失败，请重试")
-        End If
-    End Sub
 
     '倒计时模块
     Private _expireTime As Date
@@ -187,6 +178,7 @@ Public Class Form1
             AllocGuazi()
             If gz Is Nothing Then e.Handled = True
             goFuck.PerformClick()
+            SaveGuaziConfig()
         End If
     End Sub
 
@@ -222,6 +214,10 @@ Public Class Form1
         End If
     End Sub
 
+
+    Private Sub lblLogout_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles lblLogout.LinkClicked
+        LogOut()
+    End Sub
 
     Private Sub AutoSign_CheckedChanged(sender As Object, e As EventArgs) Handles AutoSign.CheckedChanged
         If Not _initflag Then Return
@@ -265,7 +261,10 @@ Public Class Form1
             gz.AsyncStopDownloadStream()
         Else
             SaveFileDialog1.FileName = gz.RoomID & "_" & Now.ToString.Replace(":", "_").Replace("/", "_") & ".flv"
-            If SaveFileDialog1.ShowDialog <> Windows.Forms.DialogResult.OK Then Return
+            If SaveFileDialog1.ShowDialog <> Windows.Forms.DialogResult.OK Then
+                StartRecord.Enabled = True
+                Return
+            End If
             gz.AsyncStartDownloadStream(SaveFileDialog1.FileName)
         End If
     End Sub
@@ -298,8 +297,31 @@ Public Class Form1
                               End Sub))
     End Sub
 
+#End Region
+#Region "脚本3"
+
+    Private Sub ReceiveSocket_CheckedChanged(sender As Object, e As EventArgs) Handles ReceiveSocket.CheckedChanged
+        If gz Is Nothing Then Return
+        If ReceiveSocket.Checked Then
+            gz.AsyncStartReceiveComment()
+        Else
+            gz.AsyncStopReceiveComment()
+        End If
+    End Sub
     Private Sub OnReceivingComment(ByVal unixTimestamp As Long, ByVal username As String, ByVal msg As String) Handles gz.ReceivedComment
-        DebugOutput("[" & username & "] " & msg)
+        DebugOutput("收到弹幕:[" & username & "] " & msg)
+    End Sub
+    Private Sub OnReceivingGiftSent(ByVal unixTimestamp As Long, ByVal giftName As String, ByVal giftId As Integer, ByVal giftNum As Integer, ByVal user As String) Handles gz.ReceivedGiftSent
+        DebugOutput("收到礼物:[" & user & "] " & giftName & "(id=" & giftId & ")" & " x" & giftNum)
+    End Sub
+    Private Sub OnReceivingWelcome(ByVal admin As Boolean, ByVal vip As Boolean, ByVal name As String) Handles gz.ReceivedWelcome
+        DebugOutput("欢迎老爷:[" & name & "]")
+    End Sub
+    Private Sub OnReceivingOnlinePeople(ByVal people As Integer) Handles gz.ReceivedOnlinePeople
+        Me.Invoke(New SafeSub(Sub()
+                                  OnlinePeople.Text = "在线人数:" & people
+                              End Sub))
     End Sub
 #End Region
+
 End Class

@@ -1,7 +1,7 @@
 # BiliSilverGet
 b站直播的瓜子搜刮机
 
-V1.0 测试版
+V1.1 测试版
 Project 2015 最后一期项目
 
 ### 编译&运行
@@ -18,6 +18,12 @@ Project 2015 最后一期项目
 - appkey和secretkey是从[别处](https://github.com/cnbeining/bilibili-grab-silver/blob/master/autograb.py)搜刮到的
 - b站登录接口是自己抓包的，想要了解更多，请见`登录说明`
 
+### 更新
+- 支持直播录播功能
+- 新增直播弹幕查看 
+- UI改版
+- 多线程代码优化
+
 ### License
 
 **Doubi License**
@@ -30,6 +36,8 @@ And changing it is allowed.
 **TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION**
 <br/>
 0. You can copy, modify and distribute all the code, but making a profit is not allowed.
-<br/><br/>
+<br/>
+<p align="right">
 Project 2015<br/>
 Pandasxd
+</p>
