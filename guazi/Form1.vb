@@ -48,6 +48,7 @@ Public Class Form1
         AutoGetItem.Checked = obj.Value(Of Boolean)("auto_get_item")
         AutoSendItem.Checked = obj.Value(Of Boolean)("auto_send_item")
         AutoGrab.Checked = obj.Value(Of Boolean)("auto_grab_silver")
+        ReceiveSocket.Checked = obj.Value(Of Boolean)("receive_room_msg")
     End Sub
     'save config
     Private Sub SaveGuaziConfig()
@@ -60,6 +61,7 @@ Public Class Form1
         obj.Add("auto_get_item", AutoGetItem.Checked)
         obj.Add("auto_send_item", AutoSendItem.Checked)
         obj.Add("auto_grab_silver", AutoGrab.Checked)
+        obj.Add("receive_room_msg", ReceiveSocket.Checked)
         Dim str As String = Newtonsoft.Json.JsonConvert.SerializeObject(obj)
         Dim sw As New IO.StreamWriter(Application.StartupPath & "\setting.json")
         sw.Write(str)
@@ -88,12 +90,12 @@ Public Class Form1
                 _shutdown_timing = True
                 System.Diagnostics.Process.Start("shutdown", " -s -t 60")
             End If
-            '修改进度条
-            lblTimeOutput.Text = ""
-            remainTime.Value = 0
-            remainTime.Maximum = 0
-            lblGuaziCount.Text = ""
         End If
+        '修改进度条
+        lblTimeOutput.Text = ""
+        remainTime.Value = 0
+        remainTime.Maximum = 0
+        lblGuaziCount.Text = ""
     End Sub
     Private Sub AutoShutdown_CheckedChanged(sender As Object, e As EventArgs) Handles AutoShutdown.CheckedChanged
         If Not _initflag Then Return
@@ -129,7 +131,6 @@ Public Class Form1
         End If
 
         _expireTime = Date.MinValue
-        _initflag = True
 
         LoadGuaziConfig()
         gz = New guazi()
@@ -137,6 +138,8 @@ Public Class Form1
             goFuck.PerformClick()
         End If
 
+        _initflag = True
+        ReceiveSocket_CheckedChanged(sender, e) 'reperform checked change
     End Sub
 
 
@@ -301,12 +304,14 @@ Public Class Form1
 #Region "脚本3"
 
     Private Sub ReceiveSocket_CheckedChanged(sender As Object, e As EventArgs) Handles ReceiveSocket.CheckedChanged
+        If Not _initflag Then Return
         If gz Is Nothing Then Return
         If ReceiveSocket.Checked Then
             gz.AsyncStartReceiveComment()
         Else
             gz.AsyncStopReceiveComment()
         End If
+        SaveGuaziConfig()
     End Sub
     Private Sub OnReceivingComment(ByVal unixTimestamp As Long, ByVal username As String, ByVal msg As String) Handles gz.ReceivedComment
         DebugOutput("收到弹幕:[" & username & "] " & msg)
@@ -321,6 +326,9 @@ Public Class Form1
         Me.Invoke(New SafeSub(Sub()
                                   OnlinePeople.Text = "在线人数:" & people
                               End Sub))
+    End Sub
+    Private Sub OnReceivingSystemMsg(ByVal msg As String, ByVal refer_url As String) Handles gz.ReceivedSystemMsg
+        DebugOutput("收到系统消息:" & msg)
     End Sub
 #End Region
 

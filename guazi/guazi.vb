@@ -174,12 +174,10 @@ Public Class guazi
         Dim param As New Parameters
         param.Add("appkey", APPKEY)
         param.Add("platform", "ios")
-        'If _RoomId Then param.Add("roomid", _RoomId)
 
         'sign calc
         param.Add("sign", calc_sign(param.BuildURLQuery & SECRETKEY))
 
-        'param.Add("r", CStr(randomR()))
         Dim req As New NetStream
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
@@ -210,7 +208,6 @@ Public Class guazi
         param.Add("appkey", APPKEY)
         param.Add("platform", "ios")
         param.Add("sign", calc_sign(param.BuildURLQuery & SECRETKEY))
-        'param.Add("r", randomR)
 
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
@@ -241,15 +238,11 @@ Public Class guazi
         Dim url As String = "http://live.bilibili.com/mobile/freeSilverAward"
         Dim req As New NetStream
         Dim param As New Parameters
-        'param.Add("r", randomR)
         param.Add("appkey", APPKEY)
         param.Add("platform", "ios")
 
-        'If _RoomId Then param.Add("roomid", _RoomId)
-
         param.Add("sign", calc_sign(param.BuildURLQuery & SECRETKEY))
 
-        'param.Add("captcha", captcha)
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
         Dim a As JObject = JsonConvert.DeserializeObject(str)
@@ -368,7 +361,6 @@ Public Class guazi
                 Dim gift_send_url As String = "http://live.bilibili.com/giftBag/send"
                 req_param.Add("giftId", gift_id)
                 req_param.Add("roomid", _RoomId)
-                'req_param.Add("ruid", _RoomInfo.Value(Of Integer)("MASTERID"))
                 req_param.Add("ruid", _RoomInfo("data").Value(Of Integer)("MASTERID"))
                 req_param.Add("num", gift_num)
                 req_param.Add("coinType", "silver")
@@ -691,6 +683,7 @@ Public Class guazi
     Public Event ReceivedComment(ByVal unixTimestamp As Long, ByVal username As String, ByVal msg As String)
     Public Event ReceivedGiftSent(ByVal unixTimestamp As Long, ByVal giftName As String, ByVal giftId As Integer, ByVal giftNum As Integer, ByVal user As String)
     Public Event ReceivedWelcome(ByVal admin As Boolean, ByVal vip As Boolean, ByVal name As String)
+    Public Event ReceivedSystemMsg(ByVal msg As String, ByVal refer_url As String)
     Private Sub ParseSocketData(ByVal data() As Byte, ByVal length As Integer)
 
         '3: online people
@@ -707,7 +700,6 @@ Public Class guazi
                 Return
             End If
             Dim version As UShort = ReadUI16(ms)
-            'Dim param3 As UShort = ReadUI16(ms)
             Dim type As UInteger = ReadUI32(ms)
             Dim param5 As UInteger = ReadUI32(ms)
 
@@ -776,17 +768,19 @@ Public Class guazi
 
                             RaiseEvent ReceivedWelcome(is_admin, is_vip, user_name)
                         Case "SYS_MSG"
-
+                            Dim msg As String = str_obj.Value(Of String)("msg")
+                            Dim url As String = str_obj.Value(Of String)("url")
+                            RaiseEvent ReceivedSystemMsg(msg, url)
                         Case Else
 
                     End Select
-                    'RaiseEvent ReceivedComment(str)
             End Select
         End While
 
         ms.Close()
     End Sub
     Public Sub AsyncStartReceiveComment()
+        If _RoomId <= 0 Then Return
         If _CommentThd.ThreadState = ThreadState.Stopped Or _CommentThd.ThreadState = ThreadState.Aborted Then
 
             _CommentThd = New Thread(AddressOf CommentThdCallback)
@@ -801,8 +795,8 @@ Public Class guazi
         End If
     End Sub
     Public Sub AsyncStopReceiveComment()
-        If _workThd.ThreadState = ThreadState.Running Then
-            _workThd.Abort()
+        If _CommentThd.ThreadState = ThreadState.Running Then
+            _CommentThd.Abort()
             _CommentHeartBeat.Abort()
         End If
     End Sub
