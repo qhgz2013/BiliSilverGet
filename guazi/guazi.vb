@@ -150,6 +150,10 @@ Public Class guazi
         req.HttpGet(url, , param)
 
         Dim str As String = ReadToEnd(req.Stream)
+
+        Debug.Print("Get room #" & _RoomId & " info succeeded, response returned value:")
+        Debug.Print(str)
+
         req.Close()
 
         _RoomInfo = JsonConvert.DeserializeObject(str)
@@ -181,6 +185,10 @@ Public Class guazi
         Dim req As New NetStream
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
+
+        Debug.Print("Get new tasks succeeded, response returned value:")
+        Debug.Print(str)
+
         req.Close()
 
         Dim ret As JObject = JsonConvert.DeserializeObject(str)
@@ -211,6 +219,10 @@ Public Class guazi
 
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
+
+        Debug.Print("Send Heartbeat succeeded, response returned value:")
+        Debug.Print(str)
+
         Dim a As JObject = JsonConvert.DeserializeObject(str)
         req.Close()
 
@@ -245,6 +257,11 @@ Public Class guazi
 
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
+
+        Debug.Print("Get award succeeded, response returned value:")
+        Debug.Print(str)
+
+
         Dim a As JObject = JsonConvert.DeserializeObject(str)
         req.Close()
 
@@ -275,6 +292,10 @@ Public Class guazi
         param.Add("sign", calc_sign(param.BuildURLQuery & SECRETKEY))
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
+
+        Debug.Print("Get award request succeeded, response returned value:")
+        Debug.Print(str)
+
         Dim a As JObject = JsonConvert.DeserializeObject(str)
         req.Close()
 
@@ -305,6 +326,9 @@ Public Class guazi
         Dim rep As String = ReadToEnd(http_req.Stream)
         http_req.Close()
 
+        Debug.Print("Daily sign succeeded, response returned value:")
+        Debug.Print(rep)
+
         Dim ret As JObject = JsonConvert.DeserializeObject(rep)
         Dim sign_status As Integer = ret("data").Value(Of Integer)("status")
 
@@ -331,6 +355,10 @@ Public Class guazi
         http_req.HttpGet(url2)
         Dim rep As String = ReadToEnd(http_req.Stream)
         http_req.Close()
+
+        Debug.Print("Get send gift succeeded, response returned value:")
+        Debug.Print(rep)
+
         Return JsonConvert.DeserializeObject(rep)
     End Function
 
@@ -344,6 +372,10 @@ Public Class guazi
         Dim http_req As New NetStream
         http_req.HttpGet(url)
         Dim rep As String = ReadToEnd(http_req.Stream)
+
+        Debug.Print("Get player bag succeeded, response returned value:")
+        Debug.Print(rep)
+
         http_req.Close()
 
         Dim ret As JObject = JsonConvert.DeserializeObject(rep)
@@ -524,7 +556,15 @@ Public Class guazi
             _RoomId = value
             get_room_info()
             AsyncStopDownloadStream()
+            Dim recv As Boolean = _isReceivingComment
             AsyncStopReceiveComment()
+            Threading.ThreadPool.QueueUserWorkItem(
+                Sub()
+                    If recv Then
+                        _CommentThd.Join()
+                        AsyncStartReceiveComment()
+                    End If
+                End Sub)
         End Set
     End Property
 
@@ -563,7 +603,7 @@ Public Class guazi
 
             Dim url As String = xml_document("video")("durl")("url").InnerText
 
-            _DownloadManager.AddTaskAndStart(path, url, "Video")
+            _DownloadManager.AddDownloadTaskAndStart(path, url, "Video")
 
         Catch ex As Exception
             RaiseEvent DebugOutput("[ERR] 抛出异常: " & ex.ToString)
@@ -587,6 +627,7 @@ Public Class guazi
     Private Const DEFAULT_COMMENT_HOST As String = "livecmt-1.bilibili.com"
     Private Const DEFAULT_COMMENT_PORT As Integer = 788
     Private _CommentSocket As Socket
+    Private _isReceivingComment As Boolean
     Private Sub CommentHeartBeatCallBack()
         Dim next_update_time As Date = Now.AddSeconds(10)
 
@@ -613,17 +654,28 @@ Public Class guazi
         Try
             _CommentSocket.Connect(ip_ed)
 
+
+            Debug.Print("Comment Socket: Sending User data")
+            RaiseEvent DebugOutput("开始接收 " & _RoomId & " 房间的弹幕信息")
+
             Dim param As New JObject
             param.Add("roomid", _RoomId)
             param.Add("uid", 100000000000000 + CLng((200000000000000 * Utils.rand.NextDouble())))
 
 
             SendSocketData(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(param)))
+
+            Debug.Print("Comment Socket: Sending User data succeeded")
+
             SendSocketHeartBeat()
             Do
                 length = _CommentSocket.Receive(buffer)
+                Debug.Print("Comment Socket: Received a socket data: length = " & length & "Byte")
                 If length <> 0 Then ParseSocketData(buffer, length)
+
             Loop
+
+        Catch ex2 As ThreadAbortException
 
         Catch ex As Exception
             RaiseEvent DebugOutput("[ERR]" & ex.ToString)
@@ -658,6 +710,9 @@ Public Class guazi
         buf.Close()
     End Sub
     Private Sub SendSocketHeartBeat()
+
+        Debug.Print("Comment Socket: Sending Heartbeat data")
+
         Dim total_len As UInteger = 16
         Dim head_len As UShort = 16
         Dim version As UShort = 1
@@ -678,6 +733,8 @@ Public Class guazi
             _CommentSocket.Send(post_data)
         End If
         buf.Close()
+
+        Debug.Print("Comment Socket: Sending Heartbeat data succeeded")
     End Sub
     Public Event ReceivedOnlinePeople(ByVal people As Integer)
     Public Event ReceivedComment(ByVal unixTimestamp As Long, ByVal username As String, ByVal msg As String)
@@ -711,6 +768,8 @@ Public Class guazi
                     Dim buf(total_len - head_len - 1) As Byte
                     ms.Read(buf, 0, total_len - head_len)
                     Dim str As String = Encoding.UTF8.GetString(buf)
+
+                    Debug.Print("Parsing socket data:" & str)
                     Dim str_obj As JObject = JsonConvert.DeserializeObject(str)
 
                     Select Case str_obj.Value(Of String)("cmd")
@@ -790,12 +849,14 @@ Public Class guazi
         End If
 
         If _CommentThd.ThreadState = ThreadState.Unstarted Then
+            _isReceivingComment = True
             _CommentThd.Start()
             _CommentHeartBeat.Start()
         End If
     End Sub
     Public Sub AsyncStopReceiveComment()
         If _CommentThd.ThreadState = ThreadState.Running Then
+            _isReceivingComment = False
             _CommentThd.Abort()
             _CommentHeartBeat.Abort()
         End If

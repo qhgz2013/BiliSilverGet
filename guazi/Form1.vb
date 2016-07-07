@@ -92,10 +92,12 @@ Public Class Form1
             End If
         End If
         '修改进度条
-        lblTimeOutput.Text = ""
-        remainTime.Value = 0
-        remainTime.Maximum = 0
-        lblGuaziCount.Text = ""
+        Me.Invoke(New SafeSub(Sub()
+                                  lblTimeOutput.Text = ""
+                                  remainTime.Value = 0
+                                  remainTime.Maximum = 0
+                                  lblGuaziCount.Text = ""
+                              End Sub))
     End Sub
     Private Sub AutoShutdown_CheckedChanged(sender As Object, e As EventArgs) Handles AutoShutdown.CheckedChanged
         If Not _initflag Then Return
@@ -219,7 +221,11 @@ Public Class Form1
 
 
     Private Sub lblLogout_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles lblLogout.LinkClicked
-        LogOut()
+        If Not LogOut() Then
+            'Dim a As New frmLogin
+            'a.ShowDialog(Me)
+            My.Forms.frmLogin.ShowDialog()
+        End If
     End Sub
 
     Private Sub AutoSign_CheckedChanged(sender As Object, e As EventArgs) Handles AutoSign.CheckedChanged

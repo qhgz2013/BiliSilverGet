@@ -132,7 +132,7 @@
     <Content Include="b站登录说明v1.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\VBUtil\VBUtil\VBUtil.vbproj">
+    <ProjectReference Include="..\VBUtil\VBUtil.vbproj">
       <Project>{d4acda56-386a-4959-ae4d-9223048d90f2}</Project>
       <Name>VBUtil</Name>
     </ProjectReference>
