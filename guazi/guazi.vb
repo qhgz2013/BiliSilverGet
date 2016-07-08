@@ -65,7 +65,7 @@ Public Class guazi
             Dim je As JObject
             '循环领取瓜子
             Do
-
+                Dim silver As Integer = 0
                 '+ : 把领奖时间设为成员变量，避免重新领取任务
                 If _expireTime = Date.MinValue Then
                     je = get_new_task_time_and_award()
@@ -85,9 +85,8 @@ Public Class guazi
                         Next
                     End If
                     Dim minutes As Integer = je("data").Value(Of Integer)("minute")
-                    Dim silver As Integer = je("data").Value(Of Integer)("silver")
+                    silver = je("data").Value(Of Integer)("silver")
 
-                    'RaiseEvent DebugOutput("预计下次领取需要" & minutes & "分钟，可以领取" & silver & "个银瓜子")
                     _expireTime = Now.AddMinutes(minutes)
 
                     RaiseEvent RefreshClock(_expireTime, silver)
@@ -99,18 +98,20 @@ Public Class guazi
                     Dim sleep_time As Integer = (_expireTime - Now).Seconds * 1000 + (_expireTime - Now).Milliseconds
                     If sleep_time < 0 Then sleep_time = 0
                     Thread.Sleep(sleep_time)
-                    'RaiseEvent DebugOutput("还剩下" & Math.Round((_expireTime - Now).TotalMinutes) & "分钟")
 
                 End While
 
-                Dim times As Integer = 0
-                While award_requests() <> 0 AndAlso times <= 10
-                    times += 1
-                    RaiseEvent DebugOutput("领取请求发送错误，重试第" & times & "次")
-                    Thread.Sleep(10000)
-                End While
+                Dim times As Integer = award_requests()
+                If times = -1 Then
+                    Continue Do
+                End If
+                If times > 0 Then
+                    _expireTime = Now.AddMinutes(times)
+                    RaiseEvent RefreshClock(_expireTime, silver)
+                    Thread.Sleep(times * 1000 * 60)
+                End If
 
-                'RaiseEvent DebugOutput("开始领取")
+                Thread.Sleep(500) '等待0.5s以防bug掉
 
                 Dim getsilver, total_silver As Integer
                 je = get_award()
@@ -224,6 +225,7 @@ Public Class guazi
         Debug.Print(str)
 
         Dim a As JObject = JsonConvert.DeserializeObject(str)
+        Dim statuscode As HttpStatusCode = req.HTTP_Response.StatusCode
         req.Close()
 
         If DEBUG_RETURN_INFO Then
@@ -233,7 +235,7 @@ Public Class guazi
 
         End If
 
-        If req.HTTP_Response.StatusCode <> Net.HttpStatusCode.OK Then
+        If statuscode <> Net.HttpStatusCode.OK Then
             RaiseEvent DebugOutput("错误：心跳发送失败")
             Return -1
         Else
@@ -263,6 +265,7 @@ Public Class guazi
 
 
         Dim a As JObject = JsonConvert.DeserializeObject(str)
+        Dim statuscode As HttpStatusCode = req.HTTP_Response.StatusCode
         req.Close()
 
         If DEBUG_RETURN_INFO Then
@@ -272,7 +275,7 @@ Public Class guazi
 
         End If
 
-        If req.HTTP_Response.StatusCode <> Net.HttpStatusCode.OK Or a.Value(Of Integer)("code") <> 0 Then
+        If statuscode <> Net.HttpStatusCode.OK Or a.Value(Of Integer)("code") <> 0 Then
             RaiseEvent DebugOutput(a.Value(Of String)("message"))
         End If
         Return a
@@ -281,7 +284,7 @@ Public Class guazi
     ''' <summary>
     ''' 领取瓜子前的请求(前戏？)
     ''' </summary>
-    ''' <returns>状态码</returns>
+    ''' <returns>错误：-1，额外的分钟：>=0</returns>
     ''' <remarks></remarks>
     Private Function award_requests() As Integer
         Dim url As String = "http://live.bilibili.com/mobile/freeSilverSurplus"
@@ -297,6 +300,7 @@ Public Class guazi
         Debug.Print(str)
 
         Dim a As JObject = JsonConvert.DeserializeObject(str)
+        Dim statuscode As HttpStatusCode = req.HTTP_Response.StatusCode
         req.Close()
 
         If DEBUG_RETURN_INFO Then
@@ -305,10 +309,10 @@ Public Class guazi
             RaiseEvent DebugOutput("[Debug] [HTTP string]" & a.ToString)
         End If
 
-        If req.HTTP_Response.StatusCode <> Net.HttpStatusCode.OK Then
+        If statuscode <> Net.HttpStatusCode.OK Then
             Return -1
         Else
-            Return a.Value(Of Integer)("code")
+            Return a("data").Value(Of Integer)("surplus")
         End If
     End Function
 
