@@ -894,15 +894,22 @@ Public Class guazi
         End If
     End Sub
 
-    '挂机
+    '挂机刷经验（爽爽爽 XD）
     Private _liveOnThd As Thread
     Private Sub liveOnThdCallback()
         Dim req As New NetStream
-        Dim url As String = "http://data.bilibili.com/e/live-on"
+        Dim url As String = "http://live.bilibili.com/User/userOnlineHeart"
         Do
             Try
                 Dim next_time As Date = Now.AddMinutes(5)
-                req.HttpHead(url)
+                RaiseEvent NextOnlineHeartBeatTime(next_time)
+
+                req.HttpPost(url, New Byte() {}, "text/plain")
+
+                Dim str As String = req.ReadResponseString
+                Debug.Print("Sending Online Heartbeat succeeded, response returned value:")
+                Debug.Print(str)
+
                 req.Close()
                 Dim sleep_time As TimeSpan = next_time - Now
                 If sleep_time.TotalMilliseconds > 0 Then Thread.Sleep(sleep_time)
@@ -913,6 +920,7 @@ Public Class guazi
             End Try
         Loop
     End Sub
+    Public Event NextOnlineHeartBeatTime(ByVal time As Date)
     Public Sub AsyncBeginLiveOn()
         If _liveOnThd Is Nothing OrElse (_liveOnThd.ThreadState = ThreadState.Stopped Or _liveOnThd.ThreadState = ThreadState.Aborted) Then
             _liveOnThd = New Thread(AddressOf liveOnThdCallback)
@@ -937,6 +945,8 @@ Public Class guazi
         Do
             Try
                 Dim next_time As Date = Now.AddMinutes(5)
+                RaiseEvent NextEventGrabTime(next_time)
+
                 req.HttpPost(url, New Byte() {}, "text/html")
                 Dim ret_str As String = req.ReadResponseString
 
@@ -968,6 +978,7 @@ Public Class guazi
         If _timeLimitEventThd Is Nothing Then Return
         _timeLimitEventThd.Abort()
     End Sub
+    Public Event NextEventGrabTime(ByVal time As Date)
 End Class
 ''' <summary>
 ''' b站登录函数[附带RSA加密模块]

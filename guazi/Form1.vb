@@ -58,6 +58,7 @@ Public Class Form1
         AutoSendItem.Checked = obj.Value(Of Boolean)("auto_send_item")
         AutoGrab.Checked = obj.Value(Of Boolean)("auto_grab_silver")
         AutoStartSpecialEvent.Checked = obj.Value(Of Boolean)("auto_start_sp_event")
+        AutoLiveOn.Checked = obj.Value(Of Boolean)("auto_get_exp")
         ReceiveSocket.Checked = obj.Value(Of Boolean)("receive_room_msg")
         _last_sign_date = FromUnixTimeStamp(obj.Value(Of Double)("last_sign_date"))
         _last_finished_grabbing_date = FromUnixTimeStamp(obj.Value(Of Double)("last_finish_grabbing_date"))
@@ -74,6 +75,7 @@ Public Class Form1
         obj.Add("auto_send_item", AutoSendItem.Checked)
         obj.Add("auto_grab_silver", AutoGrab.Checked)
         obj.Add("auto_start_sp_event", AutoStartSpecialEvent.Checked)
+        obj.Add("auto_get_exp", AutoLiveOn.Checked)
         obj.Add("receive_room_msg", ReceiveSocket.Checked)
         obj.Add("last_sign_date", ToUnixTimestamp(_last_sign_date))
         obj.Add("last_finish_grabbing_date", ToUnixTimestamp(_last_finished_grabbing_date))
@@ -83,7 +85,7 @@ Public Class Form1
         sw.Write(str)
         sw.Close()
     End Sub
-#Region "脚本1"
+#Region "脚本1 - 自动领取瓜子&签到&……"
     Private WithEvents gz As guazi = Nothing
     Private _shutdown_timing As Boolean = False
     '完成搜刮，自动关机的模块
@@ -163,15 +165,13 @@ Public Class Form1
 
     '倒计时模块
     Private _expireTime As Date
-    Private _begTime As Date
     Private Delegate Sub SafeSub()
     Private Sub OnTimeUpdate(ByVal exptime As Date, ByVal silver As Integer) Handles gz.RefreshClock
         _expireTime = exptime
-        _begTime = Now
         Me.Invoke(New SafeSub(Sub()
                                   Timer1.Enabled = True
                                   lblGuaziCount.Text = "下次可领取: " & silver & "瓜子"
-                                  remainTime.Maximum = CInt((_expireTime - _begTime).TotalSeconds)
+                                  remainTime.Maximum = CInt((_expireTime - Now).TotalSeconds)
                                   remainTime.Value = 0
                               End Sub))
     End Sub
@@ -276,10 +276,11 @@ Public Class Form1
 
         RefreshPlayerBag.PerformClick()
         AutoStartSpecialEvent_CheckedChanged(sender, e)
+        AutoLiveOn_CheckedChanged(sender, e)
     End Sub
 
 #End Region
-#Region "脚本2"
+#Region "脚本2 - 录播"
 
     Private _isRecording As Boolean
     Private _downloadSize As Long
@@ -327,7 +328,7 @@ Public Class Form1
     End Sub
 
 #End Region
-#Region "脚本3"
+#Region "脚本3 - 接收弹幕"
 
     Private Sub ReceiveSocket_CheckedChanged(sender As Object, e As EventArgs) Handles ReceiveSocket.CheckedChanged
         If Not _initflag Then Return
@@ -356,7 +357,7 @@ Public Class Form1
         DebugOutput("收到系统消息:" & msg)
     End Sub
 #End Region
-
+#Region "脚本1 - 道具栏模块"
     Private _item_list As JArray = Nothing
     '刷新背包
     Private Sub RefreshPlayerBag_Click(sender As Object, e As EventArgs) Handles RefreshPlayerBag.Click
@@ -425,7 +426,8 @@ Public Class Form1
     Private Sub listPlayerBag_MouseDoubleClick(sender As Object, e As MouseEventArgs) Handles listPlayerBag.MouseDoubleClick
         SendGift.PerformClick()
     End Sub
-
+#End Region
+#Region "脚本1 - 新增的回调函数"
     '一堆不痛不痒的回调函数
     Private Sub onSucceededSign() Handles gz.DoSignSucceeded
         _last_sign_date = Now
@@ -433,7 +435,9 @@ Public Class Form1
     Private Sub onSucceededGettingDailyGift() Handles gz.GetDailyGiftFinished
         _last_get_gift_date = Now
     End Sub
-
+#End Region
+#Region "脚本4 - 自动挂经验"
+    '自动挂经验的控件函数
     Private Sub AutoLiveOn_CheckedChanged(sender As Object, e As EventArgs) Handles AutoLiveOn.CheckedChanged
         If Not _initflag Then Return
         SaveGuaziConfig()
@@ -441,9 +445,36 @@ Public Class Form1
             gz.AsyncBeginLiveOn()
         Else
             gz.AsyncStopLiveOn()
+            remainHeartbeatTime.Value = 0
+            remainHeartbeatTime.Maximum = 0
+            lblRemainHeartbeatTimeOutput.Text = ""
         End If
     End Sub
+    Private _exp_expire_time As Date
 
+    Private Sub onLiveOnTimeChange(ByVal expire As Date) Handles gz.NextOnlineHeartBeatTime
+        Me.Invoke(
+            Sub()
+                _exp_expire_time = expire
+                remainHeartbeatTime.Maximum = CInt((_exp_expire_time - Now).TotalSeconds)
+                remainHeartbeatTime.Value = 0
+                Timer2.Enabled = True
+            End Sub)
+    End Sub
+
+    Private Sub Timer2_Tick(sender As Object, e As EventArgs) Handles Timer2.Tick
+        If _exp_expire_time < Now Then
+            Timer2.Enabled = False
+        Else
+            Dim ts As TimeSpan = _exp_expire_time - Now
+            remainHeartbeatTime.Value = remainHeartbeatTime.Maximum - CInt(ts.TotalSeconds)
+            lblRemainHeartbeatTimeOutput.Text = ts.Minutes & ":" & Format(ts.Seconds, "00")
+        End If
+
+    End Sub
+#End Region
+#Region "脚本SP - 活动领取模块"
+    '特殊活动的控件函数
     Private Sub AutoStartSpecialEvent_CheckedChanged(sender As Object, e As EventArgs) Handles AutoStartSpecialEvent.CheckedChanged
         If Not _initflag Then Return
         SaveGuaziConfig()
@@ -452,7 +483,30 @@ Public Class Form1
             gz.AsyncBeginTimeLimitedEvent()
         Else
             gz.AsyncStopTimeLimitedEvent()
+            remainSpEvent.Value = 0
+            remainSpEvent.Maximum = 0
+            lblSpEventTimeOutput.Text = ""
         End If
     End Sub
+    Private _sp_event_expire_time As Date
+    Private Sub onSpEventTimeChange(ByVal expire As Date) Handles gz.NextEventGrabTime
+        Me.Invoke(
+            Sub()
+                _sp_event_expire_time = expire
+                remainSpEvent.Maximum = CInt((_sp_event_expire_time - Now).TotalSeconds)
+                remainSpEvent.Value = 0
+                Timer3.Enabled = True
+            End Sub)
+    End Sub
 
+    Private Sub Timer3_Tick(sender As Object, e As EventArgs) Handles Timer3.Tick
+        If _sp_event_expire_time < Now Then
+            Timer3.Enabled = False
+        Else
+            Dim ts As TimeSpan = _exp_expire_time - Now
+            remainSpEvent.Value = remainSpEvent.Maximum - CInt(ts.TotalSeconds)
+            lblSpEventTimeOutput.Text = ts.Minutes & ":" & Format(ts.Seconds, "00")
+        End If
+    End Sub
+#End Region
 End Class

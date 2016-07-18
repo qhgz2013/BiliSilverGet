@@ -23,12 +23,14 @@ Partial Class Form1
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(Form1))
         Me.TextBox1 = New System.Windows.Forms.TextBox()
         Me.Label1 = New System.Windows.Forms.Label()
         Me.ListView1 = New System.Windows.Forms.ListView()
         Me.时间 = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.信息 = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.GroupBox1 = New System.Windows.Forms.GroupBox()
+        Me.lblRemainHeartbeatTimeOutput = New System.Windows.Forms.Label()
         Me.GroupBox2 = New System.Windows.Forms.GroupBox()
         Me.RefreshPlayerBag = New System.Windows.Forms.Button()
         Me.SendGift = New System.Windows.Forms.Button()
@@ -36,6 +38,8 @@ Partial Class Form1
         Me.ColumnHeader1 = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.ColumnHeader2 = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.ColumnHeader3 = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.Label5 = New System.Windows.Forms.Label()
+        Me.remainHeartbeatTime = New System.Windows.Forms.ProgressBar()
         Me.lblSize = New System.Windows.Forms.Label()
         Me.OnlinePeople = New System.Windows.Forms.Label()
         Me.lblDownloadTime = New System.Windows.Forms.Label()
@@ -62,6 +66,11 @@ Partial Class Form1
         Me.SaveFileDialog1 = New System.Windows.Forms.SaveFileDialog()
         Me.GroupBox3 = New System.Windows.Forms.GroupBox()
         Me.AutoStartSpecialEvent = New System.Windows.Forms.CheckBox()
+        Me.Label4 = New System.Windows.Forms.Label()
+        Me.remainSpEvent = New System.Windows.Forms.ProgressBar()
+        Me.lblSpEventTimeOutput = New System.Windows.Forms.Label()
+        Me.Timer2 = New System.Windows.Forms.Timer(Me.components)
+        Me.Timer3 = New System.Windows.Forms.Timer(Me.components)
         Me.GroupBox1.SuspendLayout()
         Me.GroupBox2.SuspendLayout()
         Me.GroupBox3.SuspendLayout()
@@ -109,7 +118,10 @@ Partial Class Form1
         '
         'GroupBox1
         '
+        Me.GroupBox1.Controls.Add(Me.lblRemainHeartbeatTimeOutput)
         Me.GroupBox1.Controls.Add(Me.GroupBox2)
+        Me.GroupBox1.Controls.Add(Me.Label5)
+        Me.GroupBox1.Controls.Add(Me.remainHeartbeatTime)
         Me.GroupBox1.Controls.Add(Me.lblSize)
         Me.GroupBox1.Controls.Add(Me.OnlinePeople)
         Me.GroupBox1.Controls.Add(Me.lblDownloadTime)
@@ -130,10 +142,18 @@ Partial Class Form1
         Me.GroupBox1.Controls.Add(Me.AutoShutdown)
         Me.GroupBox1.Location = New System.Drawing.Point(6, 26)
         Me.GroupBox1.Name = "GroupBox1"
-        Me.GroupBox1.Size = New System.Drawing.Size(495, 314)
+        Me.GroupBox1.Size = New System.Drawing.Size(495, 356)
         Me.GroupBox1.TabIndex = 11
         Me.GroupBox1.TabStop = False
         Me.GroupBox1.Text = "坑爹脚本_(:3」∠)_"
+        '
+        'lblRemainHeartbeatTimeOutput
+        '
+        Me.lblRemainHeartbeatTimeOutput.AutoSize = True
+        Me.lblRemainHeartbeatTimeOutput.Location = New System.Drawing.Point(361, 314)
+        Me.lblRemainHeartbeatTimeOutput.Name = "lblRemainHeartbeatTimeOutput"
+        Me.lblRemainHeartbeatTimeOutput.Size = New System.Drawing.Size(0, 12)
+        Me.lblRemainHeartbeatTimeOutput.TabIndex = 17
         '
         'GroupBox2
         '
@@ -191,6 +211,22 @@ Partial Class Form1
         Me.ColumnHeader3.Text = "道具有效期"
         Me.ColumnHeader3.Width = 95
         '
+        'Label5
+        '
+        Me.Label5.AutoSize = True
+        Me.Label5.Location = New System.Drawing.Point(106, 314)
+        Me.Label5.Name = "Label5"
+        Me.Label5.Size = New System.Drawing.Size(65, 12)
+        Me.Label5.TabIndex = 9
+        Me.Label5.Text = "领取进度条"
+        '
+        'remainHeartbeatTime
+        '
+        Me.remainHeartbeatTime.Location = New System.Drawing.Point(177, 316)
+        Me.remainHeartbeatTime.Name = "remainHeartbeatTime"
+        Me.remainHeartbeatTime.Size = New System.Drawing.Size(178, 10)
+        Me.remainHeartbeatTime.TabIndex = 8
+        '
         'lblSize
         '
         Me.lblSize.AutoSize = True
@@ -246,7 +282,7 @@ Partial Class Form1
         'lblGuaziCount
         '
         Me.lblGuaziCount.AutoSize = True
-        Me.lblGuaziCount.Location = New System.Drawing.Point(370, 65)
+        Me.lblGuaziCount.Location = New System.Drawing.Point(128, 86)
         Me.lblGuaziCount.Name = "lblGuaziCount"
         Me.lblGuaziCount.Size = New System.Drawing.Size(107, 12)
         Me.lblGuaziCount.TabIndex = 11
@@ -255,7 +291,7 @@ Partial Class Form1
         'lblTimeOutput
         '
         Me.lblTimeOutput.AutoSize = True
-        Me.lblTimeOutput.Location = New System.Drawing.Point(272, 46)
+        Me.lblTimeOutput.Location = New System.Drawing.Point(377, 65)
         Me.lblTimeOutput.Name = "lblTimeOutput"
         Me.lblTimeOutput.Size = New System.Drawing.Size(0, 12)
         Me.lblTimeOutput.TabIndex = 10
@@ -291,9 +327,9 @@ Partial Class Form1
         '
         'remainTime
         '
-        Me.remainTime.Location = New System.Drawing.Point(186, 65)
+        Me.remainTime.Location = New System.Drawing.Point(186, 67)
         Me.remainTime.Name = "remainTime"
-        Me.remainTime.Size = New System.Drawing.Size(178, 12)
+        Me.remainTime.Size = New System.Drawing.Size(178, 10)
         Me.remainTime.TabIndex = 8
         '
         'Button2
@@ -328,13 +364,12 @@ Partial Class Form1
         'AutoLiveOn
         '
         Me.AutoLiveOn.AutoSize = True
-        Me.AutoLiveOn.Location = New System.Drawing.Point(220, 20)
+        Me.AutoLiveOn.Location = New System.Drawing.Point(13, 313)
         Me.AutoLiveOn.Name = "AutoLiveOn"
         Me.AutoLiveOn.Size = New System.Drawing.Size(78, 16)
         Me.AutoLiveOn.TabIndex = 5
         Me.AutoLiveOn.Text = "挂机领EXP"
         Me.AutoLiveOn.UseVisualStyleBackColor = True
-        Me.AutoLiveOn.Visible = False
         '
         'AutoStart
         '
@@ -403,9 +438,12 @@ Partial Class Form1
         'GroupBox3
         '
         Me.GroupBox3.Controls.Add(Me.AutoStartSpecialEvent)
-        Me.GroupBox3.Location = New System.Drawing.Point(6, 346)
+        Me.GroupBox3.Controls.Add(Me.Label4)
+        Me.GroupBox3.Controls.Add(Me.remainSpEvent)
+        Me.GroupBox3.Controls.Add(Me.lblSpEventTimeOutput)
+        Me.GroupBox3.Location = New System.Drawing.Point(6, 402)
         Me.GroupBox3.Name = "GroupBox3"
-        Me.GroupBox3.Size = New System.Drawing.Size(495, 36)
+        Me.GroupBox3.Size = New System.Drawing.Size(495, 58)
         Me.GroupBox3.TabIndex = 18
         Me.GroupBox3.TabStop = False
         Me.GroupBox3.Text = "限时活动"
@@ -413,12 +451,42 @@ Partial Class Form1
         'AutoStartSpecialEvent
         '
         Me.AutoStartSpecialEvent.AutoSize = True
-        Me.AutoStartSpecialEvent.Location = New System.Drawing.Point(7, 14)
+        Me.AutoStartSpecialEvent.Location = New System.Drawing.Point(13, 20)
         Me.AutoStartSpecialEvent.Name = "AutoStartSpecialEvent"
         Me.AutoStartSpecialEvent.Size = New System.Drawing.Size(132, 16)
         Me.AutoStartSpecialEvent.TabIndex = 0
         Me.AutoStartSpecialEvent.Text = "屠龙宝刀，点击就送"
         Me.AutoStartSpecialEvent.UseVisualStyleBackColor = True
+        '
+        'Label4
+        '
+        Me.Label4.AutoSize = True
+        Me.Label4.Location = New System.Drawing.Point(151, 21)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(65, 12)
+        Me.Label4.TabIndex = 9
+        Me.Label4.Text = "领取进度条"
+        '
+        'remainSpEvent
+        '
+        Me.remainSpEvent.Location = New System.Drawing.Point(222, 23)
+        Me.remainSpEvent.Name = "remainSpEvent"
+        Me.remainSpEvent.Size = New System.Drawing.Size(178, 10)
+        Me.remainSpEvent.TabIndex = 8
+        '
+        'lblSpEventTimeOutput
+        '
+        Me.lblSpEventTimeOutput.AutoSize = True
+        Me.lblSpEventTimeOutput.Location = New System.Drawing.Point(406, 21)
+        Me.lblSpEventTimeOutput.Name = "lblSpEventTimeOutput"
+        Me.lblSpEventTimeOutput.Size = New System.Drawing.Size(0, 12)
+        Me.lblSpEventTimeOutput.TabIndex = 10
+        '
+        'Timer2
+        '
+        '
+        'Timer3
+        '
         '
         'Form1
         '
@@ -434,9 +502,10 @@ Partial Class Form1
         Me.Controls.Add(Me.ListView1)
         Me.Controls.Add(Me.Label1)
         Me.Controls.Add(Me.TextBox1)
+        Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
         Me.MaximizeBox = False
         Me.Name = "Form1"
-        Me.Text = "Form1"
+        Me.Text = "Form1 <- 懒得改了 又名 瓜子搜挂机 ~ 终极绝杀版 ~"
         Me.GroupBox1.ResumeLayout(False)
         Me.GroupBox1.PerformLayout()
         Me.GroupBox2.ResumeLayout(False)
@@ -485,4 +554,12 @@ Partial Class Form1
     Friend WithEvents AutoLiveOn As CheckBox
     Friend WithEvents GroupBox3 As GroupBox
     Friend WithEvents AutoStartSpecialEvent As CheckBox
+    Friend WithEvents lblRemainHeartbeatTimeOutput As Label
+    Friend WithEvents Label5 As Label
+    Friend WithEvents remainHeartbeatTime As ProgressBar
+    Friend WithEvents Label4 As Label
+    Friend WithEvents remainSpEvent As ProgressBar
+    Friend WithEvents lblSpEventTimeOutput As Label
+    Friend WithEvents Timer2 As Timer
+    Friend WithEvents Timer3 As Timer
 End Class
