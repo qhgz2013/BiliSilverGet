@@ -146,7 +146,7 @@ Public Class Form1
         If AutoStart.Checked Then
             'ThreadPool.QueueUserWorkItem(
             'Sub()
-            gz.RoomID = bRoomId.Text
+            gz.RoomURL = bRoomId.Text
             goFuck(sender, e)
             'End Sub)
         End If
@@ -197,7 +197,7 @@ Public Class Form1
                 Dim roomid As Integer
                 If Integer.TryParse(bRoomId.Text, roomid) Then
                     If roomid > 0 Then
-                        gz.RoomID = roomid
+                        gz.RoomURL = roomid
                         goFuck(sender, e)
                         SaveGuaziConfig()
                     Else

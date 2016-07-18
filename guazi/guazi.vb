@@ -37,10 +37,11 @@ Public Class guazi
     Private _workThd As Thread
     Private _startTime As Integer
     Private _RoomId As Integer
+    Private _RoomURL As Integer
     Private _RoomInfo As JObject
 
-    Private Const APPKEY As String = "85eb6835b0a1034e" '"c1b107428d337928" 
-    Private Const SECRETKEY As String = "2ad42749773c441109bdc0191257a664" '"49c0356b37c67b5524c3646b694e8a57" 
+    Private Const APPKEY As String = "85eb6835b0a1034e"
+    Private Const SECRETKEY As String = "2ad42749773c441109bdc0191257a664"
     Private Const VER As String = "0.98.86"
 
     Private Const DEBUG_RETURN_INFO As Boolean = False
@@ -163,21 +164,31 @@ Public Class guazi
     ''' </summary>
     ''' <remarks></remarks>
     Private Sub get_room_info()
-        If _RoomId <= 0 Then
+        If _RoomURL <= 0 Then
             _RoomInfo = New JObject
             Return
         End If
-        Dim url As String = "http://live.bilibili.com/live/getInfo"
-        Dim param As New Parameters
-        param.Add("roomid", _RoomId)
+        'room url -> room id
+        Dim room_url As String = "http://live.bilibili.com/" & _RoomURL
         Dim req As New NetStream
         req.ReadWriteTimeout = 5000
         req.Timeout = 5000
-        req.HttpGet(url, , param)
+        req.HttpGet(room_url)
+        Dim str As String = req.ReadResponseString
+        req.Close()
 
-        Dim str As String = ReadToEnd(req.Stream)
+        Dim reg As Match = Regex.Match(str, "var\s+ROOMID\s+=\s+(\d+);")
+        If reg.Success = False Then Throw New ArgumentException("Can not get RoomID")
+        _RoomId = Integer.Parse(reg.Result("$1"))
 
-        Debug.Print("Get room #" & _RoomId & " info succeeded, response returned value:")
+        Dim info_url As String = "http://live.bilibili.com/live/getInfo"
+        Dim param As New Parameters
+        param.Add("roomid", _RoomId)
+        req.HttpGet(info_url, , param)
+
+        str = req.ReadResponseString
+
+        Debug.Print("Get room #" & _RoomURL & "(" & _RoomId & ") info succeeded, response returned value:")
         Debug.Print(str)
 
         req.Close()
@@ -436,7 +447,7 @@ Public Class guazi
             Dim post_result_ds As JObject = JsonConvert.DeserializeObject(post_result)
             Dim post_result_code As Integer = post_result_ds.Value(Of Integer)("code")
             If post_result_code = 0 Then
-                RaiseEvent DebugOutput("自动送出道具成功(道具编号:" & giftid & ",数量:" & giftnum & ")")
+                RaiseEvent DebugOutput("送出道具成功(道具编号:" & giftid & ",数量:" & giftnum & ")")
             Else
                 RaiseEvent DebugOutput("送出道具失败，返回数据:" & vbCrLf & post_result_ds.ToString)
             End If
@@ -453,7 +464,7 @@ Public Class guazi
     ''' <param name="roomid"></param>
     ''' <remarks></remarks>
     Public Sub New(Optional ByVal roomid As Integer = 0)
-        _RoomId = roomid
+        _RoomURL = roomid
         _RoomInfo = Nothing
         _DownloadManager = New HTTP_Stream_Manager
         _expireTime = Date.MinValue
@@ -547,14 +558,14 @@ Public Class guazi
         thd.Start()
     End Sub
     Public Event DoSignSucceeded()
-    Public Property RoomID() As Integer
+    Public Property RoomURL() As Integer
         Get
-            Return _RoomId
+            Return _RoomURL
         End Get
         Set(value As Integer)
-            If _RoomId = value Then Return
+            If _RoomURL = value Then Return
             RaiseEvent DebugOutput("进入房间:" & value & "成功")
-            _RoomId = value
+            _RoomURL = value
             get_room_info()
             AsyncStopDownloadStream()
             Dim recv As Boolean = _isReceivingComment
@@ -567,6 +578,11 @@ Public Class guazi
                     End If
                 End Sub)
         End Set
+    End Property
+    Public ReadOnly Property RoomID() As Integer
+        Get
+            Return _RoomId
+        End Get
     End Property
 
     '录播
@@ -658,7 +674,7 @@ Public Class guazi
             _CommentSocket.Connect(ip_ed)
 
             Debug.Print("Comment Socket: Sending User data")
-            RaiseEvent DebugOutput("开始接收 " & _RoomId & " 房间的弹幕信息")
+            RaiseEvent DebugOutput("开始接收 " & _RoomURL & " 房间的弹幕信息")
 
             Dim param As New JObject
             param.Add("roomid", _RoomId)
