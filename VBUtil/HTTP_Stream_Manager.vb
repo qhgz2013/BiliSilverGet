@@ -225,7 +225,7 @@ Public Class HTTP_Stream_Manager
             Loop Until (nRead = 0 Or _pauseFlag Or _stopFlag)
         End Sub
         Public Sub New(ByVal parent As HTTP_Stream_Manager, ByVal name As String, ByVal LocalAddr As String, ByVal HTTPAddr As String, ByVal download As Boolean)
-            If _is_download_thread Then
+            If download Then
                 _Thread = New Thread(AddressOf _thread_download_callback)
             Else
                 _Thread = New Thread(AddressOf _thread_upload_callback)

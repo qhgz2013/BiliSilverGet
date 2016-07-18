@@ -62,72 +62,95 @@ Public Class guazi
         Try
             _expireTime = Date.MinValue
 
-            Dim je As JObject
-            '循环领取瓜子
+            Dim je As JObject = Nothing
+            '循环领取瓜子,直到领取结束
             Do
                 Dim silver As Integer = 0
-                '+ : 把领奖时间设为成员变量，避免重新领取任务
-                If _expireTime = Date.MinValue Then
-                    je = get_new_task_time_and_award()
 
+                '获取新的任务
+                Do
+                    Try
+                        je = get_new_task_time_and_award()
+                    Catch ex As Exception
+                        RaiseEvent DebugOutput(ex.ToString)
+                        Debug.Print(ex.ToString)
+                    End Try
                     Dim code As Integer = je.Value(Of Integer)("code")
                     If code = -10017 Then
                         RaiseEvent DebugOutput("本日瓜子已领完，欢迎下次再来XD")
                         RaiseEvent FinishedGrabbing()
-                        Exit Do
-                    ElseIf code <> 0 Then
-                        For i As Integer = 1 To 11
-                            Thread.Sleep(1000)
-                            RaiseEvent DebugOutput("发送领取请求错误，重试第" & i & "次")
-                            je = get_new_task_time_and_award()
-                            code = je.Value(Of Integer)("code")
-
-                        Next
+                        Exit Try
                     End If
-                    Dim minutes As Integer = je("data").Value(Of Integer)("minute")
-                    silver = je("data").Value(Of Integer)("silver")
+                Loop While je Is Nothing OrElse je.Value(Of Integer)("code") <> 0
+                '计算时间
+                Dim minutes As Integer = je("data").Value(Of Integer)("minute")
+                silver = je("data").Value(Of Integer)("silver")
+                _expireTime = Now.AddMinutes(minutes)
+                RaiseEvent RefreshClock(_expireTime, silver)
 
-                    _expireTime = Now.AddMinutes(minutes)
-
-                    RaiseEvent RefreshClock(_expireTime, silver)
-                End If
-
-
-                While (_expireTime - Now).TotalSeconds > 0
-                    send_heartbeat()
-                    Dim sleep_time As Integer = (_expireTime - Now).Seconds * 1000 + (_expireTime - Now).Milliseconds
-                    If sleep_time < 0 Then sleep_time = 0
+                '倒计+发送心跳
+                Dim request_ms As Integer = 0
+                Dim sw As New Stopwatch
+                '结束倒计的标识改为在心跳接收到"isAward":true时退出
+                Dim loop_end_flag As Boolean = False
+                Do
+                    Dim sleep_time As Integer = 60000 - request_ms
                     Thread.Sleep(sleep_time)
 
-                End While
+                    Try
+                        sw.Start()
+                        Dim json As JObject = send_heartbeat()
+                        loop_end_flag = CType(json("data"), JObject).Value(Of Boolean)("isAward")
+                    Catch ex As Exception
+                        RaiseEvent DebugOutput(ex.ToString)
+                        Debug.Print(ex.ToString)
+                    Finally
+                        sw.Stop()
+                        request_ms = sw.ElapsedMilliseconds
+                        sw.Reset()
+                    End Try
+                Loop Until loop_end_flag
 
-                Dim times As Integer = award_requests()
-                If times = -1 Then
-                    Continue Do
-                End If
-                If times > 0 Then
-                    _expireTime = Now.AddMinutes(times)
-                    RaiseEvent RefreshClock(_expireTime, silver)
-                    Thread.Sleep(times * 1000 * 60)
-                End If
+                '领取前的状态检查
+                Dim plus_time As Integer = 0
+                request_ms = 0
+                Do
+                    Dim sleep_time As Integer = 60000 * plus_time - request_ms
+                    If sleep_time > 0 Then Thread.Sleep(sleep_time)
+                    Try
+                        sw.Start()
+                        plus_time = award_requests()
+                    Catch ex As Exception
+                        RaiseEvent DebugOutput(ex.ToString)
+                        Debug.Print(ex.ToString)
+                    Finally
+                        sw.Stop()
+                        request_ms = sw.ElapsedMilliseconds
+                        sw.Reset()
+                    End Try
+                Loop While plus_time
 
-                Thread.Sleep(500) '等待0.5s以防bug掉
-
+                '领取瓜子
                 Dim getsilver, total_silver As Integer
-                je = get_award()
-                If je.Value(Of Integer)("code") = 0 Then
+                Try
+                    je = get_award()
+                    If je.Value(Of Integer)("code") = 0 Then
 
-                    getsilver = je("data").Value(Of Integer)("awardSilver")
-                    total_silver = je("data").Value(Of Integer)("silver")
+                        getsilver = je("data").Value(Of Integer)("awardSilver")
+                        total_silver = je("data").Value(Of Integer)("silver")
 
-                    If getsilver > 0 Then
-                        RaiseEvent DebugOutput("领取成功！得到" & getsilver & "个银瓜子(总" & total_silver & "个)")
+                        If getsilver > 0 Then
+                            RaiseEvent DebugOutput("领取成功！得到" & getsilver & "个银瓜子(总" & total_silver & "个)")
+                            _expireTime = Date.MinValue
+                        End If
+                    Else
+                        RaiseEvent DebugOutput("领取错误")
                         _expireTime = Date.MinValue
                     End If
-                Else
-                    RaiseEvent DebugOutput("领取错误")
-                    _expireTime = Date.MinValue
-                End If
+                Catch ex As Exception
+                    RaiseEvent DebugOutput(ex.ToString)
+                    Debug.Print(ex.ToString)
+                End Try
 
             Loop
         Catch ex As Exception
@@ -148,6 +171,8 @@ Public Class guazi
         Dim param As New Parameters
         param.Add("roomid", _RoomId)
         Dim req As New NetStream
+        req.ReadWriteTimeout = 5000
+        req.Timeout = 5000
         req.HttpGet(url, , param)
 
         Dim str As String = ReadToEnd(req.Stream)
@@ -158,10 +183,6 @@ Public Class guazi
         req.Close()
 
         _RoomInfo = JsonConvert.DeserializeObject(str)
-
-        If DEBUG_RETURN_INFO Then
-            RaiseEvent DebugOutput("In get_room_info : " & _RoomInfo.ToString)
-        End If
 
         _startTime = Int(Utils.Others.ToUnixTimestamp(Now))
 
@@ -184,6 +205,8 @@ Public Class guazi
         param.Add("sign", calc_sign(param.BuildURLQuery & SECRETKEY))
 
         Dim req As New NetStream
+        req.ReadWriteTimeout = 5000
+        req.Timeout = 5000
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
 
@@ -194,13 +217,6 @@ Public Class guazi
 
         Dim ret As JObject = JsonConvert.DeserializeObject(str)
 
-        If DEBUG_RETURN_INFO Then
-            RaiseEvent DebugOutput("[Debug] In get_new_task_time_and_award() : ")
-            RaiseEvent DebugOutput("[Debug] [HTTP request]" & url)
-            RaiseEvent DebugOutput("[Debug] [HTTP string]" & ret.ToString)
-
-        End If
-
         Return ret
     End Function
 
@@ -209,9 +225,11 @@ Public Class guazi
     ''' </summary>
     ''' <returns>心跳包返回的状态码</returns>
     ''' <remarks></remarks>
-    Private Function send_heartbeat() As Integer
+    Private Function send_heartbeat() As JObject
         Dim url As String = "http://live.bilibili.com/mobile/freeSilverHeart"
         Dim req As New NetStream
+        req.ReadWriteTimeout = 5000
+        req.Timeout = 5000
         Dim param As New Parameters
 
         param.Add("appkey", APPKEY)
@@ -228,19 +246,7 @@ Public Class guazi
         Dim statuscode As HttpStatusCode = req.HTTP_Response.StatusCode
         req.Close()
 
-        If DEBUG_RETURN_INFO Then
-            RaiseEvent DebugOutput("[Debug] In send_heartbeat() : ")
-            RaiseEvent DebugOutput("[Debug] [HTTP request]" & url)
-            RaiseEvent DebugOutput("[Debug] [HTTP string]" & a.ToString)
-
-        End If
-
-        If statuscode <> Net.HttpStatusCode.OK Then
-            RaiseEvent DebugOutput("错误：心跳发送失败")
-            Return -1
-        Else
-            Return a.Value(Of Integer)("code")
-        End If
+        Return a
     End Function
 
     ''' <summary>
@@ -251,6 +257,8 @@ Public Class guazi
     Private Function get_award() As JObject
         Dim url As String = "http://live.bilibili.com/mobile/freeSilverAward"
         Dim req As New NetStream
+        req.ReadWriteTimeout = 5000
+        req.Timeout = 5000
         Dim param As New Parameters
         param.Add("appkey", APPKEY)
         param.Add("platform", "ios")
@@ -268,14 +276,7 @@ Public Class guazi
         Dim statuscode As HttpStatusCode = req.HTTP_Response.StatusCode
         req.Close()
 
-        If DEBUG_RETURN_INFO Then
-            RaiseEvent DebugOutput("[Debug] In get_award(captcha) : ")
-            RaiseEvent DebugOutput("[Debug] [HTTP request]" & url)
-            RaiseEvent DebugOutput("[Debug] [HTTP string]" & a.ToString)
-
-        End If
-
-        If statuscode <> Net.HttpStatusCode.OK Or a.Value(Of Integer)("code") <> 0 Then
+        If a.Value(Of Integer)("code") <> 0 Then
             RaiseEvent DebugOutput(a.Value(Of String)("message"))
         End If
         Return a
@@ -284,11 +285,13 @@ Public Class guazi
     ''' <summary>
     ''' 领取瓜子前的请求(前戏？)
     ''' </summary>
-    ''' <returns>错误：-1，额外的分钟：>=0</returns>
+    ''' <returns>额外的分钟：>=0</returns>
     ''' <remarks></remarks>
     Private Function award_requests() As Integer
         Dim url As String = "http://live.bilibili.com/mobile/freeSilverSurplus"
         Dim req As New NetStream
+        req.ReadWriteTimeout = 5000
+        req.Timeout = 5000
         Dim param As New Parameters
         param.Add("appkey", APPKEY)
         param.Add("platform", "ios")
@@ -303,17 +306,7 @@ Public Class guazi
         Dim statuscode As HttpStatusCode = req.HTTP_Response.StatusCode
         req.Close()
 
-        If DEBUG_RETURN_INFO Then
-            RaiseEvent DebugOutput("[Debug] In award_requests() : ")
-            RaiseEvent DebugOutput("[Debug] [HTTP request]" & url)
-            RaiseEvent DebugOutput("[Debug] [HTTP string]" & a.ToString)
-        End If
-
-        If statuscode <> Net.HttpStatusCode.OK Then
-            Return -1
-        Else
-            Return a("data").Value(Of Integer)("surplus")
-        End If
+        Return a("data").Value(Of Integer)("surplus")
     End Function
 
     ''' <summary>
@@ -326,6 +319,8 @@ Public Class guazi
         Dim status_url As String = "http://live.bilibili.com/sign/GetSignInfo"
 
         Dim http_req As New NetStream
+        http_req.ReadWriteTimeout = 5000
+        http_req.Timeout = 5000
         http_req.HttpGet(status_url)
         Dim rep As String = ReadToEnd(http_req.Stream)
         http_req.Close()
@@ -353,10 +348,12 @@ Public Class guazi
     ''' <remarks></remarks>
     Private Function get_send_gift() As JObject
         Dim url As String = "http://live.bilibili.com/giftBag/sendDaily"
-        Dim url2 As String = "http://live.bilibili.com/giftBag/getSendGift"
+        'Dim url2 As String = "http://live.bilibili.com/giftBag/getSendGift"
         Dim http_req As New NetStream
+        http_req.ReadWriteTimeout = 5000
+        http_req.Timeout = 5000
         http_req.HttpGet(url)
-        http_req.HttpGet(url2)
+        'http_req.HttpGet(url2)
         Dim rep As String = ReadToEnd(http_req.Stream)
         http_req.Close()
 
@@ -371,9 +368,11 @@ Public Class guazi
     ''' </summary>
     ''' <returns></returns>
     ''' <remarks></remarks>
-    Private Function get_player_bag(Optional ByVal auto_send As Boolean = False) As JObject
+    Public Function SyncGetPlayerBag(Optional ByVal auto_send As Boolean = False) As JObject
         Dim url As String = "http://live.bilibili.com/gift/playerBag"
         Dim http_req As New NetStream
+        http_req.ReadWriteTimeout = 5000
+        http_req.Timeout = 5000
         http_req.HttpGet(url)
         Dim rep As String = ReadToEnd(http_req.Stream)
 
@@ -392,41 +391,7 @@ Public Class guazi
                 Dim gift_num As Integer = item.Value(Of Integer)("gift_num")
                 Dim id As Integer = item.Value(Of Integer)("id")
 
-                'HTTP请求
-                Dim req_param As New Parameters
-                Dim gift_send_url As String = "http://live.bilibili.com/giftBag/send"
-                req_param.Add("giftId", gift_id)
-                req_param.Add("roomid", _RoomId)
-                req_param.Add("ruid", _RoomInfo("data").Value(Of Integer)("MASTERID"))
-                req_param.Add("num", gift_num)
-                req_param.Add("coinType", "silver")
-                req_param.Add("Bag_id", id)
-                req_param.Add("timestamp", CInt(VBUtil.Utils.Others.ToUnixTimestamp(Now)))
-                req_param.Add("rnd", VBUtil.Utils.Others.rand.Next())
-                req_param.Add("token", DefaultCookieContainer.GetCookies(New Uri(gift_send_url))("LIVE_LOGIN_DATA").Value)
-
-                http_req.HttpPost(gift_send_url, req_param)
-
-                Dim post_result As String = ReadToEnd(http_req.Stream)
-                http_req.Close()
-                Dim post_result_ds As JObject = JsonConvert.DeserializeObject(post_result)
-                Dim post_result_code As Integer = post_result_ds.Value(Of Integer)("code")
-                If post_result_code = 0 Then
-                    RaiseEvent DebugOutput("自动送出道具成功(道具编号:" & gift_id & ",数量:" & gift_num & ")")
-                Else
-                    RaiseEvent DebugOutput("送出道具失败，返回数据:" & vbCrLf & post_result_ds.ToString)
-                End If
-
-                '不知道为什么送完后会加上一条这样的get
-                Dim callback_url As String = "http://live.bilibili.com/giftBag/sendDaily"
-                http_req.HttpGet(callback_url)
-                Dim callback_str As String = ReadToEnd(http_req.Stream)
-                http_req.Close()
-                Dim callback_ds As JObject = JsonConvert.DeserializeObject(callback_str)
-                Dim callback_code As Integer = callback_ds.Value(Of Integer)("code")
-                If callback_code <> 0 Then
-                    RaiseEvent DebugOutput("送出道具回调检测失败，返回数据:" & vbCrLf & post_result_ds.ToString)
-                End If
+                SyncSendGift(gift_id, id, gift_num)
             Next
 
             '重置返回值
@@ -438,13 +403,49 @@ Public Class guazi
             End If
 
             Return ret
-
         Else
             Return ret
         End If
     End Function
 
+    Public Function SyncSendGift(ByVal giftid As Integer, ByVal bagid As Integer, ByVal giftnum As Integer) As Boolean
+        If _RoomId <= 0 Then Return False
+        Try
 
+            Dim http_req As New NetStream
+            http_req.ReadWriteTimeout = 5000
+            http_req.Timeout = 5000
+            'HTTP请求
+            Dim req_param As New Parameters
+            Dim gift_send_url As String = "http://live.bilibili.com/giftBag/send"
+            req_param.Add("giftId", giftid)
+            req_param.Add("roomid", _RoomId)
+            req_param.Add("ruid", _RoomInfo("data").Value(Of Integer)("MASTERID"))
+            req_param.Add("num", giftnum)
+            req_param.Add("coinType", "silver")
+            req_param.Add("Bag_id", bagid)
+            req_param.Add("timestamp", CInt(VBUtil.Utils.Others.ToUnixTimestamp(Now)))
+            req_param.Add("rnd", VBUtil.Utils.Others.rand.Next())
+            req_param.Add("token", DefaultCookieContainer.GetCookies(New Uri(gift_send_url))("LIVE_LOGIN_DATA").Value)
+
+            http_req.HttpPost(gift_send_url, req_param)
+
+            Dim post_result As String = http_req.ReadResponseString
+            http_req.Close()
+
+            Dim post_result_ds As JObject = JsonConvert.DeserializeObject(post_result)
+            Dim post_result_code As Integer = post_result_ds.Value(Of Integer)("code")
+            If post_result_code = 0 Then
+                RaiseEvent DebugOutput("自动送出道具成功(道具编号:" & giftid & ",数量:" & giftnum & ")")
+            Else
+                RaiseEvent DebugOutput("送出道具失败，返回数据:" & vbCrLf & post_result_ds.ToString)
+            End If
+            Return True
+        Catch ex As Exception
+            RaiseEvent DebugOutput("[ERR]" & ex.ToString)
+            Return False
+        End Try
+    End Function
     'public functions
     ''' <summary>
     ''' 构造函数，roomid之前是用来送投票券和道具的
@@ -452,14 +453,6 @@ Public Class guazi
     ''' <param name="roomid"></param>
     ''' <remarks></remarks>
     Public Sub New(Optional ByVal roomid As Integer = 0)
-        _workThd = New Thread(AddressOf GuaziCallBack)
-        _workThd.Name = "Bili Live Auto Grabbing Silver Thread"
-
-        _CommentThd = New Thread(AddressOf CommentThdCallback)
-        _CommentThd.Name = "Bili Live Socket Thread"
-        _CommentHeartBeat = New Thread(AddressOf CommentHeartBeatCallBack)
-        _CommentHeartBeat.Name = "Bili Live Socket Heartbeat Thread"
-
         _RoomId = roomid
         _RoomInfo = Nothing
         _DownloadManager = New HTTP_Stream_Manager
@@ -473,7 +466,7 @@ Public Class guazi
 
     '开始领取瓜子
     Public Sub AsyncStartGrabbingSilver()
-        If _workThd.ThreadState = ThreadState.Stopped Or _workThd.ThreadState = ThreadState.Aborted Then
+        If _workThd Is Nothing OrElse (_workThd.ThreadState = ThreadState.Stopped Or _workThd.ThreadState = ThreadState.Aborted) Then
             _workThd = New Thread(AddressOf GuaziCallBack)
             _workThd.Name = "Bili Live Auto Grabbing Silver Thread"
         End If
@@ -490,13 +483,14 @@ Public Class guazi
     End Sub
     '获得每日道具
     Public Sub AsyncGetDailyGift()
-        Dim thd As New Thread( _
+        Dim thd As New Thread(
             Sub()
                 Try
                     '领取道具
                     Dim gift_rep As JObject = get_send_gift()
                     If gift_rep.Value(Of Integer)("code") = 0 Then
-                        RaiseEvent DebugOutput("领取每日道具成功，获得" & gift_rep.Value(Of JArray)("data").Count & "个道具")
+                        RaiseEvent DebugOutput("领取每日道具成功")
+                        RaiseEvent GetDailyGiftFinished()
                     Else
                         RaiseEvent DebugOutput("领取道具失败，返回数据:" & vbCrLf & gift_rep.ToString)
                     End If
@@ -508,14 +502,15 @@ Public Class guazi
         thd.Name = "Get Daily Gift Thread"
         thd.Start()
     End Sub
+    Public Event GetDailyGiftFinished()
     '赠送每日道具
     Public Sub AsyncSendDailyGift()
         If _RoomId <= 0 Then Return
-        Dim thd As New Thread( _
+        Dim thd As New Thread(
             Sub()
                 Try
-                    get_player_bag(True)
-
+                    SyncGetPlayerBag(True)
+                    RaiseEvent SendDailyGiftFinished()
                 Catch ex As Exception
                     RaiseEvent DebugOutput("[ERR] 抛出异常: " & ex.ToString)
                 End Try
@@ -524,9 +519,10 @@ Public Class guazi
         thd.Name = "Send Daily Gift Thread"
         thd.Start()
     End Sub
+    Public Event SendDailyGiftFinished()
     '签到
     Public Sub AsyncDoSign()
-        Dim thd As New Thread( _
+        Dim thd As New Thread(
             Sub()
                 Try
 
@@ -537,6 +533,7 @@ Public Class guazi
                     Select Case sign_state
                         Case 0
                             RaiseEvent DebugOutput("已完成签到")
+                            RaiseEvent DoSignSucceeded()
                         Case Else
                             RaiseEvent DebugOutput("未知错误:[" & sign_state & "]" & dosign.Value(Of String)("msg"))
                     End Select
@@ -549,7 +546,7 @@ Public Class guazi
         thd.Name = "Daily Sign Thread"
         thd.Start()
     End Sub
-
+    Public Event DoSignSucceeded()
     Public Property RoomID() As Integer
         Get
             Return _RoomId
@@ -600,6 +597,8 @@ Public Class guazi
 
             Dim xml_document As New Xml.XmlDocument
             Dim req As New NetStream
+            req.ReadWriteTimeout = 5000
+            req.Timeout = 5000
             req.HttpGet(DEFAULT_VIDEO_URL, , param)
             Dim xml_str As String = ReadToEnd(req.Stream)
             req.Close()
@@ -653,11 +652,10 @@ Public Class guazi
         Dim ip_ed As IPEndPoint = New IPEndPoint(ipaddr, DEFAULT_COMMENT_PORT)
 
         _CommentSocket = New Sockets.Socket(Sockets.AddressFamily.InterNetwork, Sockets.SocketType.Stream, Sockets.ProtocolType.Tcp)
-        Dim buffer(8191) As Byte
+        Dim buffer(1048575) As Byte
         Dim length As Integer = 0
         Try
             _CommentSocket.Connect(ip_ed)
-
 
             Debug.Print("Comment Socket: Sending User data")
             RaiseEvent DebugOutput("开始接收 " & _RoomId & " 房间的弹幕信息")
@@ -668,14 +666,18 @@ Public Class guazi
 
 
             SendSocketData(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(param)))
-
-            Debug.Print("Comment Socket: Sending User data succeeded")
-
             SendSocketHeartBeat()
             Do
                 length = _CommentSocket.Receive(buffer)
                 Debug.Print("Comment Socket: Received a socket data: length = " & length & "Byte")
-                If length <> 0 Then ParseSocketData(buffer, length)
+                If length <> 0 Then
+                    Try
+                        ParseSocketData(buffer, length)
+                    Catch ex As Exception
+                        RaiseEvent DebugOutput("[ERR]" & ex.ToString)
+                        Debug.Print(ex.ToString)
+                    End Try
+                End If
 
             Loop
 
@@ -738,7 +740,6 @@ Public Class guazi
         End If
         buf.Close()
 
-        Debug.Print("Comment Socket: Sending Heartbeat data succeeded")
     End Sub
     Public Event ReceivedOnlinePeople(ByVal people As Integer)
     Public Event ReceivedComment(ByVal unixTimestamp As Long, ByVal username As String, ByVal msg As String)
@@ -774,7 +775,12 @@ Public Class guazi
                     Dim str As String = Encoding.UTF8.GetString(buf)
 
                     Debug.Print("Parsing socket data:" & str)
-                    Dim str_obj As JObject = JsonConvert.DeserializeObject(str)
+                    Dim str_obj As JObject = Nothing
+                    Try
+                        str_obj = JsonConvert.DeserializeObject(str)
+                    Catch ex As Exception
+                        Throw ex
+                    End Try
 
                     Select Case str_obj.Value(Of String)("cmd")
 
@@ -834,6 +840,12 @@ Public Class guazi
                             Dim msg As String = str_obj.Value(Of String)("msg")
                             Dim url As String = str_obj.Value(Of String)("url")
                             RaiseEvent ReceivedSystemMsg(msg, url)
+                        Case "SYS_GIFT"
+                            '算了就暂时先一样吧 _(:3」∠)_ 有空再说 有空再说 <-你再懒（╯－＿－）╯╧╧
+                            Dim msg As String = str_obj.Value(Of String)("msg")
+                            Dim url As String = str_obj.Value(Of String)("url")
+                            RaiseEvent ReceivedSystemMsg(msg, url)
+
                         Case Else
 
                     End Select
@@ -844,7 +856,7 @@ Public Class guazi
     End Sub
     Public Sub AsyncStartReceiveComment()
         If _RoomId <= 0 Then Return
-        If _CommentThd.ThreadState = ThreadState.Stopped Or _CommentThd.ThreadState = ThreadState.Aborted Then
+        If _CommentThd Is Nothing OrElse (_CommentThd.ThreadState = ThreadState.Stopped Or _CommentThd.ThreadState = ThreadState.Aborted) Then
 
             _CommentThd = New Thread(AddressOf CommentThdCallback)
             _CommentThd.Name = "Bili Live Socket Thread"
@@ -859,11 +871,86 @@ Public Class guazi
         End If
     End Sub
     Public Sub AsyncStopReceiveComment()
-        If _CommentThd.ThreadState = ThreadState.Running Then
+        If _CommentThd IsNot Nothing AndAlso _CommentThd.ThreadState = ThreadState.Running Then
             _isReceivingComment = False
             _CommentThd.Abort()
             _CommentHeartBeat.Abort()
         End If
+    End Sub
+
+    '挂机
+    Private _liveOnThd As Thread
+    Private Sub liveOnThdCallback()
+        Dim req As New NetStream
+        Dim url As String = "http://data.bilibili.com/e/live-on"
+        Do
+            Try
+                Dim next_time As Date = Now.AddMinutes(5)
+                req.HttpHead(url)
+                req.Close()
+                Dim sleep_time As TimeSpan = next_time - Now
+                If sleep_time.TotalMilliseconds > 0 Then Thread.Sleep(sleep_time)
+            Catch ex2 As ThreadAbortException
+                Exit Do
+            Catch ex As Exception
+                Debug.Print(ex.ToString)
+            End Try
+        Loop
+    End Sub
+    Public Sub AsyncBeginLiveOn()
+        If _liveOnThd Is Nothing OrElse (_liveOnThd.ThreadState = ThreadState.Stopped Or _liveOnThd.ThreadState = ThreadState.Aborted) Then
+            _liveOnThd = New Thread(AddressOf liveOnThdCallback)
+            _liveOnThd.Name = "Bili Live Online Thread"
+        End If
+
+        If _liveOnThd.ThreadState = ThreadState.Unstarted Then
+            _liveOnThd.Start()
+        End If
+    End Sub
+    Public Sub AsyncStopLiveOn()
+        If _liveOnThd Is Nothing Then Return
+        _liveOnThd.Abort()
+    End Sub
+
+    'b站限时活动 目前是领取什么扇的活动，所以在活动结束后不要调用 :-D
+    Private _timeLimitEventThd As Thread
+    Private Sub EventThdCallback()
+
+        Dim req As New NetStream
+        Dim url As String = "http://live.bilibili.com/summer/heart"
+        Do
+            Try
+                Dim next_time As Date = Now.AddMinutes(5)
+                req.HttpPost(url, New Byte() {}, "text/html")
+                Dim ret_str As String = req.ReadResponseString
+
+                Debug.Print("Sending Special Event Heartbeat succeeded, response returned value:")
+                Debug.Print(ret_str)
+
+                req.Close()
+
+                Dim sleep_time As TimeSpan = next_time - Now
+                If sleep_time.TotalMilliseconds > 0 Then Thread.Sleep(sleep_time)
+            Catch ex2 As ThreadAbortException
+                Exit Do
+            Catch ex As Exception
+                Debug.Print(ex.ToString)
+            End Try
+        Loop
+    End Sub
+    Public Sub AsyncBeginTimeLimitedEvent()
+        If _timeLimitEventThd Is Nothing OrElse (_timeLimitEventThd.ThreadState = ThreadState.Stopped Or _timeLimitEventThd.ThreadState = ThreadState.Aborted) Then
+            _timeLimitEventThd = New Thread(AddressOf EventThdCallback)
+            _timeLimitEventThd.Name = "Bili Live Special Event Thread"
+        End If
+
+        If _timeLimitEventThd.ThreadState = ThreadState.Unstarted Then
+            _timeLimitEventThd.Start()
+        End If
+    End Sub
+    Public Sub AsyncStopTimeLimitedEvent()
+        If _timeLimitEventThd Is Nothing Then Return
+        _timeLimitEventThd.Abort()
     End Sub
 End Class
 ''' <summary>
@@ -899,6 +986,8 @@ Public Module Bilibili_Login
 
         'RSA加密
         Dim req As New NetStream
+        req.ReadWriteTimeout = 5000
+        req.Timeout = 5000
 
         'Form1.DebugOutput("获取RSA公钥URL: " & LOGIN_PUBLIC_KEY)
         req.HttpGet(LOGIN_PUBLIC_KEY)
@@ -961,6 +1050,8 @@ Public Module Bilibili_Login
 
         'RSA加密
         Dim req As New NetStream
+        req.ReadWriteTimeout = 5000
+        req.Timeout = 5000
 
         'Form1.DebugOutput("获取RSA公钥URL: " & LOGIN_PUBLIC_KEY)
         req.HttpGet(LOGIN_PUBLIC_KEY)
@@ -1014,6 +1105,8 @@ Public Module Bilibili_Login
     ''' <remarks></remarks>
     Public Function GetCaptchaImage() As Image
         Dim req As New NetStream
+        req.ReadWriteTimeout = 5000
+        req.Timeout = 5000
         req.HttpGet(CAPTCHA_URL)
         Dim img As Image = Image.FromStream(req.Stream)
         req.Close()
@@ -1026,6 +1119,8 @@ Public Module Bilibili_Login
     ''' <remarks></remarks>
     Public Function CheckLogin() As Boolean
         Dim req As New NetStream
+        req.ReadWriteTimeout = 5000
+        req.Timeout = 5000
         req.HttpGet(API_MY_INFO)
         Dim str As String = ReadToEnd(req.Stream)
         req.Close()
@@ -1043,6 +1138,8 @@ Public Module Bilibili_Login
         Dim param As New Parameters
         param.Add("act", "exit")
         Dim req As New NetStream
+        req.ReadWriteTimeout = 5000
+        req.Timeout = 5000
 
         'Form1.DebugOutput("发送注销信息...")
 

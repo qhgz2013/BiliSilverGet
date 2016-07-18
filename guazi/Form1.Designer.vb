@@ -29,32 +29,39 @@ Partial Class Form1
         Me.时间 = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.信息 = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.GroupBox1 = New System.Windows.Forms.GroupBox()
-        Me.goFuck = New System.Windows.Forms.Button()
+        Me.GroupBox2 = New System.Windows.Forms.GroupBox()
+        Me.RefreshPlayerBag = New System.Windows.Forms.Button()
+        Me.SendGift = New System.Windows.Forms.Button()
+        Me.listPlayerBag = New System.Windows.Forms.ListView()
+        Me.ColumnHeader1 = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.ColumnHeader2 = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.ColumnHeader3 = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.lblSize = New System.Windows.Forms.Label()
+        Me.OnlinePeople = New System.Windows.Forms.Label()
+        Me.lblDownloadTime = New System.Windows.Forms.Label()
+        Me.ReceiveSocket = New System.Windows.Forms.CheckBox()
+        Me.lblSpeed = New System.Windows.Forms.Label()
+        Me.StartRecord = New System.Windows.Forms.Button()
         Me.lblGuaziCount = New System.Windows.Forms.Label()
         Me.lblTimeOutput = New System.Windows.Forms.Label()
+        Me.AutoGetItem = New System.Windows.Forms.CheckBox()
+        Me.AutoSendItem = New System.Windows.Forms.CheckBox()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.remainTime = New System.Windows.Forms.ProgressBar()
         Me.Button2 = New System.Windows.Forms.Button()
         Me.AutoGrab = New System.Windows.Forms.CheckBox()
-        Me.AutoSendItem = New System.Windows.Forms.CheckBox()
-        Me.AutoGetItem = New System.Windows.Forms.CheckBox()
         Me.AutoSign = New System.Windows.Forms.CheckBox()
+        Me.AutoLiveOn = New System.Windows.Forms.CheckBox()
         Me.AutoStart = New System.Windows.Forms.CheckBox()
         Me.AutoShutdown = New System.Windows.Forms.CheckBox()
         Me.testButton = New System.Windows.Forms.LinkLabel()
         Me.Timer1 = New System.Windows.Forms.Timer(Me.components)
-        Me.GroupBox2 = New System.Windows.Forms.GroupBox()
-        Me.lblSize = New System.Windows.Forms.Label()
-        Me.lblDownloadTime = New System.Windows.Forms.Label()
-        Me.lblSpeed = New System.Windows.Forms.Label()
-        Me.StartRecord = New System.Windows.Forms.Button()
         Me.bRoomId = New System.Windows.Forms.TextBox()
         Me.Label2 = New System.Windows.Forms.Label()
         Me.lblLogout = New System.Windows.Forms.LinkLabel()
         Me.SaveFileDialog1 = New System.Windows.Forms.SaveFileDialog()
         Me.GroupBox3 = New System.Windows.Forms.GroupBox()
-        Me.OnlinePeople = New System.Windows.Forms.Label()
-        Me.ReceiveSocket = New System.Windows.Forms.CheckBox()
+        Me.AutoStartSpecialEvent = New System.Windows.Forms.CheckBox()
         Me.GroupBox1.SuspendLayout()
         Me.GroupBox2.SuspendLayout()
         Me.GroupBox3.SuspendLayout()
@@ -102,38 +109,144 @@ Partial Class Form1
         '
         'GroupBox1
         '
-        Me.GroupBox1.Controls.Add(Me.goFuck)
+        Me.GroupBox1.Controls.Add(Me.GroupBox2)
+        Me.GroupBox1.Controls.Add(Me.lblSize)
+        Me.GroupBox1.Controls.Add(Me.OnlinePeople)
+        Me.GroupBox1.Controls.Add(Me.lblDownloadTime)
+        Me.GroupBox1.Controls.Add(Me.ReceiveSocket)
+        Me.GroupBox1.Controls.Add(Me.lblSpeed)
+        Me.GroupBox1.Controls.Add(Me.StartRecord)
         Me.GroupBox1.Controls.Add(Me.lblGuaziCount)
         Me.GroupBox1.Controls.Add(Me.lblTimeOutput)
+        Me.GroupBox1.Controls.Add(Me.AutoGetItem)
+        Me.GroupBox1.Controls.Add(Me.AutoSendItem)
         Me.GroupBox1.Controls.Add(Me.Label3)
         Me.GroupBox1.Controls.Add(Me.remainTime)
         Me.GroupBox1.Controls.Add(Me.Button2)
         Me.GroupBox1.Controls.Add(Me.AutoGrab)
-        Me.GroupBox1.Controls.Add(Me.AutoSendItem)
-        Me.GroupBox1.Controls.Add(Me.AutoGetItem)
         Me.GroupBox1.Controls.Add(Me.AutoSign)
+        Me.GroupBox1.Controls.Add(Me.AutoLiveOn)
         Me.GroupBox1.Controls.Add(Me.AutoStart)
         Me.GroupBox1.Controls.Add(Me.AutoShutdown)
         Me.GroupBox1.Location = New System.Drawing.Point(6, 26)
         Me.GroupBox1.Name = "GroupBox1"
-        Me.GroupBox1.Size = New System.Drawing.Size(495, 113)
+        Me.GroupBox1.Size = New System.Drawing.Size(495, 314)
         Me.GroupBox1.TabIndex = 11
         Me.GroupBox1.TabStop = False
-        Me.GroupBox1.Text = "坑爹脚本1:b站直播自动领瓜子"
+        Me.GroupBox1.Text = "坑爹脚本_(:3」∠)_"
         '
-        'goFuck
+        'GroupBox2
         '
-        Me.goFuck.Location = New System.Drawing.Point(9, 18)
-        Me.goFuck.Name = "goFuck"
-        Me.goFuck.Size = New System.Drawing.Size(480, 27)
-        Me.goFuck.TabIndex = 17
-        Me.goFuck.Text = "↓开启神秘之旅↓"
-        Me.goFuck.UseVisualStyleBackColor = True
+        Me.GroupBox2.Controls.Add(Me.RefreshPlayerBag)
+        Me.GroupBox2.Controls.Add(Me.SendGift)
+        Me.GroupBox2.Controls.Add(Me.listPlayerBag)
+        Me.GroupBox2.Location = New System.Drawing.Point(139, 162)
+        Me.GroupBox2.Name = "GroupBox2"
+        Me.GroupBox2.Size = New System.Drawing.Size(350, 141)
+        Me.GroupBox2.TabIndex = 16
+        Me.GroupBox2.TabStop = False
+        Me.GroupBox2.Text = "道具清单:("
+        '
+        'RefreshPlayerBag
+        '
+        Me.RefreshPlayerBag.Location = New System.Drawing.Point(6, 111)
+        Me.RefreshPlayerBag.Name = "RefreshPlayerBag"
+        Me.RefreshPlayerBag.Size = New System.Drawing.Size(90, 25)
+        Me.RefreshPlayerBag.TabIndex = 0
+        Me.RefreshPlayerBag.Text = "刷新道具清单"
+        Me.RefreshPlayerBag.UseVisualStyleBackColor = True
+        '
+        'SendGift
+        '
+        Me.SendGift.Location = New System.Drawing.Point(102, 111)
+        Me.SendGift.Name = "SendGift"
+        Me.SendGift.Size = New System.Drawing.Size(242, 25)
+        Me.SendGift.TabIndex = 1
+        Me.SendGift.Text = "赠送选定道具（或者双击道具清单也可以）"
+        Me.SendGift.UseVisualStyleBackColor = True
+        '
+        'listPlayerBag
+        '
+        Me.listPlayerBag.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.ColumnHeader1, Me.ColumnHeader2, Me.ColumnHeader3})
+        Me.listPlayerBag.FullRowSelect = True
+        Me.listPlayerBag.Location = New System.Drawing.Point(6, 20)
+        Me.listPlayerBag.Name = "listPlayerBag"
+        Me.listPlayerBag.Size = New System.Drawing.Size(338, 85)
+        Me.listPlayerBag.TabIndex = 0
+        Me.listPlayerBag.UseCompatibleStateImageBehavior = False
+        Me.listPlayerBag.View = System.Windows.Forms.View.Details
+        '
+        'ColumnHeader1
+        '
+        Me.ColumnHeader1.Text = "道具名称"
+        Me.ColumnHeader1.Width = 89
+        '
+        'ColumnHeader2
+        '
+        Me.ColumnHeader2.Text = "道具数量"
+        Me.ColumnHeader2.Width = 70
+        '
+        'ColumnHeader3
+        '
+        Me.ColumnHeader3.Text = "道具有效期"
+        Me.ColumnHeader3.Width = 95
+        '
+        'lblSize
+        '
+        Me.lblSize.AutoSize = True
+        Me.lblSize.Location = New System.Drawing.Point(370, 111)
+        Me.lblSize.Name = "lblSize"
+        Me.lblSize.Size = New System.Drawing.Size(0, 12)
+        Me.lblSize.TabIndex = 15
+        '
+        'OnlinePeople
+        '
+        Me.OnlinePeople.AutoSize = True
+        Me.OnlinePeople.Location = New System.Drawing.Point(186, 141)
+        Me.OnlinePeople.Name = "OnlinePeople"
+        Me.OnlinePeople.Size = New System.Drawing.Size(59, 12)
+        Me.OnlinePeople.TabIndex = 1
+        Me.OnlinePeople.Text = "在线人数:"
+        '
+        'lblDownloadTime
+        '
+        Me.lblDownloadTime.AutoSize = True
+        Me.lblDownloadTime.Location = New System.Drawing.Point(245, 111)
+        Me.lblDownloadTime.Name = "lblDownloadTime"
+        Me.lblDownloadTime.Size = New System.Drawing.Size(0, 12)
+        Me.lblDownloadTime.TabIndex = 14
+        '
+        'ReceiveSocket
+        '
+        Me.ReceiveSocket.AutoSize = True
+        Me.ReceiveSocket.Location = New System.Drawing.Point(13, 140)
+        Me.ReceiveSocket.Name = "ReceiveSocket"
+        Me.ReceiveSocket.Size = New System.Drawing.Size(120, 16)
+        Me.ReceiveSocket.TabIndex = 0
+        Me.ReceiveSocket.Text = "接收直播弹幕信息"
+        Me.ReceiveSocket.UseVisualStyleBackColor = True
+        '
+        'lblSpeed
+        '
+        Me.lblSpeed.AutoSize = True
+        Me.lblSpeed.Location = New System.Drawing.Point(106, 111)
+        Me.lblSpeed.Name = "lblSpeed"
+        Me.lblSpeed.Size = New System.Drawing.Size(0, 12)
+        Me.lblSpeed.TabIndex = 13
+        '
+        'StartRecord
+        '
+        Me.StartRecord.Location = New System.Drawing.Point(13, 100)
+        Me.StartRecord.Name = "StartRecord"
+        Me.StartRecord.Size = New System.Drawing.Size(87, 34)
+        Me.StartRecord.TabIndex = 12
+        Me.StartRecord.Text = "点击开始录播"
+        Me.StartRecord.UseVisualStyleBackColor = True
         '
         'lblGuaziCount
         '
         Me.lblGuaziCount.AutoSize = True
-        Me.lblGuaziCount.Location = New System.Drawing.Point(353, 92)
+        Me.lblGuaziCount.Location = New System.Drawing.Point(370, 65)
         Me.lblGuaziCount.Name = "lblGuaziCount"
         Me.lblGuaziCount.Size = New System.Drawing.Size(107, 12)
         Me.lblGuaziCount.TabIndex = 11
@@ -142,15 +255,35 @@ Partial Class Form1
         'lblTimeOutput
         '
         Me.lblTimeOutput.AutoSize = True
-        Me.lblTimeOutput.Location = New System.Drawing.Point(282, 92)
+        Me.lblTimeOutput.Location = New System.Drawing.Point(272, 46)
         Me.lblTimeOutput.Name = "lblTimeOutput"
         Me.lblTimeOutput.Size = New System.Drawing.Size(0, 12)
         Me.lblTimeOutput.TabIndex = 10
         '
+        'AutoGetItem
+        '
+        Me.AutoGetItem.AutoSize = True
+        Me.AutoGetItem.Location = New System.Drawing.Point(13, 162)
+        Me.AutoGetItem.Name = "AutoGetItem"
+        Me.AutoGetItem.Size = New System.Drawing.Size(120, 16)
+        Me.AutoGetItem.TabIndex = 5
+        Me.AutoGetItem.Text = "自动领取每日道具"
+        Me.AutoGetItem.UseVisualStyleBackColor = True
+        '
+        'AutoSendItem
+        '
+        Me.AutoSendItem.AutoSize = True
+        Me.AutoSendItem.Location = New System.Drawing.Point(13, 186)
+        Me.AutoSendItem.Name = "AutoSendItem"
+        Me.AutoSendItem.Size = New System.Drawing.Size(120, 16)
+        Me.AutoSendItem.TabIndex = 5
+        Me.AutoSendItem.Text = "自动送出全部道具"
+        Me.AutoSendItem.UseVisualStyleBackColor = True
+        '
         'Label3
         '
         Me.Label3.AutoSize = True
-        Me.Label3.Location = New System.Drawing.Point(11, 92)
+        Me.Label3.Location = New System.Drawing.Point(115, 65)
         Me.Label3.Name = "Label3"
         Me.Label3.Size = New System.Drawing.Size(65, 12)
         Me.Label3.TabIndex = 9
@@ -158,14 +291,14 @@ Partial Class Form1
         '
         'remainTime
         '
-        Me.remainTime.Location = New System.Drawing.Point(98, 92)
+        Me.remainTime.Location = New System.Drawing.Point(186, 65)
         Me.remainTime.Name = "remainTime"
         Me.remainTime.Size = New System.Drawing.Size(178, 12)
         Me.remainTime.TabIndex = 8
         '
         'Button2
         '
-        Me.Button2.Location = New System.Drawing.Point(266, 46)
+        Me.Button2.Location = New System.Drawing.Point(379, 80)
         Me.Button2.Name = "Button2"
         Me.Button2.Size = New System.Drawing.Size(98, 25)
         Me.Button2.TabIndex = 6
@@ -175,47 +308,38 @@ Partial Class Form1
         'AutoGrab
         '
         Me.AutoGrab.AutoSize = True
-        Me.AutoGrab.Location = New System.Drawing.Point(319, 73)
+        Me.AutoGrab.Location = New System.Drawing.Point(13, 64)
         Me.AutoGrab.Name = "AutoGrab"
         Me.AutoGrab.Size = New System.Drawing.Size(96, 16)
         Me.AutoGrab.TabIndex = 5
         Me.AutoGrab.Text = "自动领取瓜子"
         Me.AutoGrab.UseVisualStyleBackColor = True
         '
-        'AutoSendItem
-        '
-        Me.AutoSendItem.AutoSize = True
-        Me.AutoSendItem.Location = New System.Drawing.Point(217, 73)
-        Me.AutoSendItem.Name = "AutoSendItem"
-        Me.AutoSendItem.Size = New System.Drawing.Size(96, 16)
-        Me.AutoSendItem.TabIndex = 5
-        Me.AutoSendItem.Text = "自动送出道具"
-        Me.AutoSendItem.UseVisualStyleBackColor = True
-        '
-        'AutoGetItem
-        '
-        Me.AutoGetItem.AutoSize = True
-        Me.AutoGetItem.Location = New System.Drawing.Point(91, 73)
-        Me.AutoGetItem.Name = "AutoGetItem"
-        Me.AutoGetItem.Size = New System.Drawing.Size(120, 16)
-        Me.AutoGetItem.TabIndex = 5
-        Me.AutoGetItem.Text = "自动领取每日道具"
-        Me.AutoGetItem.UseVisualStyleBackColor = True
-        '
         'AutoSign
         '
         Me.AutoSign.AutoSize = True
-        Me.AutoSign.Location = New System.Drawing.Point(13, 73)
+        Me.AutoSign.Location = New System.Drawing.Point(13, 42)
         Me.AutoSign.Name = "AutoSign"
         Me.AutoSign.Size = New System.Drawing.Size(72, 16)
         Me.AutoSign.TabIndex = 5
         Me.AutoSign.Text = "自动签到"
         Me.AutoSign.UseVisualStyleBackColor = True
         '
+        'AutoLiveOn
+        '
+        Me.AutoLiveOn.AutoSize = True
+        Me.AutoLiveOn.Location = New System.Drawing.Point(220, 20)
+        Me.AutoLiveOn.Name = "AutoLiveOn"
+        Me.AutoLiveOn.Size = New System.Drawing.Size(78, 16)
+        Me.AutoLiveOn.TabIndex = 5
+        Me.AutoLiveOn.Text = "挂机领EXP"
+        Me.AutoLiveOn.UseVisualStyleBackColor = True
+        Me.AutoLiveOn.Visible = False
+        '
         'AutoStart
         '
         Me.AutoStart.AutoSize = True
-        Me.AutoStart.Location = New System.Drawing.Point(13, 51)
+        Me.AutoStart.Location = New System.Drawing.Point(13, 20)
         Me.AutoStart.Name = "AutoStart"
         Me.AutoStart.Size = New System.Drawing.Size(84, 16)
         Me.AutoStart.TabIndex = 5
@@ -225,7 +349,7 @@ Partial Class Form1
         'AutoShutdown
         '
         Me.AutoShutdown.AutoSize = True
-        Me.AutoShutdown.Location = New System.Drawing.Point(140, 51)
+        Me.AutoShutdown.Location = New System.Drawing.Point(253, 85)
         Me.AutoShutdown.Name = "AutoShutdown"
         Me.AutoShutdown.Size = New System.Drawing.Size(120, 16)
         Me.AutoShutdown.TabIndex = 3
@@ -244,52 +368,6 @@ Partial Class Form1
         '
         'Timer1
         '
-        '
-        'GroupBox2
-        '
-        Me.GroupBox2.Controls.Add(Me.lblSize)
-        Me.GroupBox2.Controls.Add(Me.lblDownloadTime)
-        Me.GroupBox2.Controls.Add(Me.lblSpeed)
-        Me.GroupBox2.Controls.Add(Me.StartRecord)
-        Me.GroupBox2.Location = New System.Drawing.Point(6, 145)
-        Me.GroupBox2.Name = "GroupBox2"
-        Me.GroupBox2.Size = New System.Drawing.Size(494, 64)
-        Me.GroupBox2.TabIndex = 13
-        Me.GroupBox2.TabStop = False
-        Me.GroupBox2.Text = "坑爹脚本2:录播"
-        '
-        'lblSize
-        '
-        Me.lblSize.AutoSize = True
-        Me.lblSize.Location = New System.Drawing.Point(353, 31)
-        Me.lblSize.Name = "lblSize"
-        Me.lblSize.Size = New System.Drawing.Size(0, 12)
-        Me.lblSize.TabIndex = 2
-        '
-        'lblDownloadTime
-        '
-        Me.lblDownloadTime.AutoSize = True
-        Me.lblDownloadTime.Location = New System.Drawing.Point(242, 31)
-        Me.lblDownloadTime.Name = "lblDownloadTime"
-        Me.lblDownloadTime.Size = New System.Drawing.Size(0, 12)
-        Me.lblDownloadTime.TabIndex = 1
-        '
-        'lblSpeed
-        '
-        Me.lblSpeed.AutoSize = True
-        Me.lblSpeed.Location = New System.Drawing.Point(103, 31)
-        Me.lblSpeed.Name = "lblSpeed"
-        Me.lblSpeed.Size = New System.Drawing.Size(0, 12)
-        Me.lblSpeed.TabIndex = 1
-        '
-        'StartRecord
-        '
-        Me.StartRecord.Location = New System.Drawing.Point(10, 20)
-        Me.StartRecord.Name = "StartRecord"
-        Me.StartRecord.Size = New System.Drawing.Size(87, 34)
-        Me.StartRecord.TabIndex = 0
-        Me.StartRecord.Text = "点击开始录播"
-        Me.StartRecord.UseVisualStyleBackColor = True
         '
         'bRoomId
         '
@@ -324,33 +402,23 @@ Partial Class Form1
         '
         'GroupBox3
         '
-        Me.GroupBox3.Controls.Add(Me.OnlinePeople)
-        Me.GroupBox3.Controls.Add(Me.ReceiveSocket)
-        Me.GroupBox3.Location = New System.Drawing.Point(8, 219)
+        Me.GroupBox3.Controls.Add(Me.AutoStartSpecialEvent)
+        Me.GroupBox3.Location = New System.Drawing.Point(6, 346)
         Me.GroupBox3.Name = "GroupBox3"
-        Me.GroupBox3.Size = New System.Drawing.Size(493, 163)
+        Me.GroupBox3.Size = New System.Drawing.Size(495, 36)
         Me.GroupBox3.TabIndex = 18
         Me.GroupBox3.TabStop = False
-        Me.GroupBox3.Text = "坑爹脚本3:直播弹幕"
+        Me.GroupBox3.Text = "限时活动"
         '
-        'OnlinePeople
+        'AutoStartSpecialEvent
         '
-        Me.OnlinePeople.AutoSize = True
-        Me.OnlinePeople.Location = New System.Drawing.Point(13, 37)
-        Me.OnlinePeople.Name = "OnlinePeople"
-        Me.OnlinePeople.Size = New System.Drawing.Size(59, 12)
-        Me.OnlinePeople.TabIndex = 1
-        Me.OnlinePeople.Text = "在线人数:"
-        '
-        'ReceiveSocket
-        '
-        Me.ReceiveSocket.AutoSize = True
-        Me.ReceiveSocket.Location = New System.Drawing.Point(15, 18)
-        Me.ReceiveSocket.Name = "ReceiveSocket"
-        Me.ReceiveSocket.Size = New System.Drawing.Size(72, 16)
-        Me.ReceiveSocket.TabIndex = 0
-        Me.ReceiveSocket.Text = "接受信息"
-        Me.ReceiveSocket.UseVisualStyleBackColor = True
+        Me.AutoStartSpecialEvent.AutoSize = True
+        Me.AutoStartSpecialEvent.Location = New System.Drawing.Point(7, 14)
+        Me.AutoStartSpecialEvent.Name = "AutoStartSpecialEvent"
+        Me.AutoStartSpecialEvent.Size = New System.Drawing.Size(132, 16)
+        Me.AutoStartSpecialEvent.TabIndex = 0
+        Me.AutoStartSpecialEvent.Text = "屠龙宝刀，点击就送"
+        Me.AutoStartSpecialEvent.UseVisualStyleBackColor = True
         '
         'Form1
         '
@@ -361,7 +429,6 @@ Partial Class Form1
         Me.Controls.Add(Me.lblLogout)
         Me.Controls.Add(Me.bRoomId)
         Me.Controls.Add(Me.Label2)
-        Me.Controls.Add(Me.GroupBox2)
         Me.Controls.Add(Me.testButton)
         Me.Controls.Add(Me.GroupBox1)
         Me.Controls.Add(Me.ListView1)
@@ -373,7 +440,6 @@ Partial Class Form1
         Me.GroupBox1.ResumeLayout(False)
         Me.GroupBox1.PerformLayout()
         Me.GroupBox2.ResumeLayout(False)
-        Me.GroupBox2.PerformLayout()
         Me.GroupBox3.ResumeLayout(False)
         Me.GroupBox3.PerformLayout()
         Me.ResumeLayout(False)
@@ -399,18 +465,24 @@ Partial Class Form1
     Friend WithEvents AutoSendItem As System.Windows.Forms.CheckBox
     Friend WithEvents AutoGetItem As System.Windows.Forms.CheckBox
     Friend WithEvents AutoSign As System.Windows.Forms.CheckBox
-    Friend WithEvents GroupBox2 As System.Windows.Forms.GroupBox
-    Friend WithEvents goFuck As System.Windows.Forms.Button
     Friend WithEvents bRoomId As System.Windows.Forms.TextBox
     Friend WithEvents Label2 As System.Windows.Forms.Label
     Friend WithEvents lblLogout As System.Windows.Forms.LinkLabel
-    Friend WithEvents StartRecord As System.Windows.Forms.Button
     Friend WithEvents SaveFileDialog1 As System.Windows.Forms.SaveFileDialog
-    Friend WithEvents lblSpeed As System.Windows.Forms.Label
-    Friend WithEvents lblSize As System.Windows.Forms.Label
-    Friend WithEvents lblDownloadTime As System.Windows.Forms.Label
-    Friend WithEvents GroupBox3 As System.Windows.Forms.GroupBox
     Friend WithEvents ReceiveSocket As System.Windows.Forms.CheckBox
     Friend WithEvents OnlinePeople As System.Windows.Forms.Label
-
+    Friend WithEvents lblDownloadTime As Label
+    Friend WithEvents lblSpeed As Label
+    Friend WithEvents StartRecord As Button
+    Friend WithEvents lblSize As Label
+    Friend WithEvents GroupBox2 As GroupBox
+    Friend WithEvents RefreshPlayerBag As Button
+    Friend WithEvents SendGift As Button
+    Friend WithEvents listPlayerBag As ListView
+    Friend WithEvents ColumnHeader1 As ColumnHeader
+    Friend WithEvents ColumnHeader2 As ColumnHeader
+    Friend WithEvents ColumnHeader3 As ColumnHeader
+    Friend WithEvents AutoLiveOn As CheckBox
+    Friend WithEvents GroupBox3 As GroupBox
+    Friend WithEvents AutoStartSpecialEvent As CheckBox
 End Class
