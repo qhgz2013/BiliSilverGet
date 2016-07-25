@@ -16,7 +16,7 @@ Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.IO
 Imports VBUtil.Utils.NetUtils
-Imports VBUtil.Utils.StreamUtils
+Imports VBUtil.Utils
 Imports VBUtil
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
@@ -658,7 +658,12 @@ Public Class guazi
             End If
 
             If _CommentSocket IsNot Nothing AndAlso _CommentSocket.Connected = True Then
-                SendSocketHeartBeat()
+                Try
+                    SendSocketHeartBeat()
+                Catch ex As Exception
+                    Debug.Print(ex.ToString)
+                    RaiseEvent DebugOutput("[ERR]" & ex.ToString)
+                End Try
             End If
         Loop
     End Sub
@@ -763,6 +768,7 @@ Public Class guazi
     Public Event ReceivedWelcome(ByVal admin As Boolean, ByVal vip As Boolean, ByVal name As String)
     Public Event ReceivedSystemMsg(ByVal msg As String, ByVal refer_url As String)
     Private Sub ParseSocketData(ByVal data() As Byte, ByVal length As Integer)
+        'todo: 兼容两条receive后合并处理的数据
 
         '3: online people
         '5: msg
@@ -795,23 +801,59 @@ Public Class guazi
                     Try
                         str_obj = JsonConvert.DeserializeObject(str)
                     Catch ex As Exception
-                        Throw ex
+                        Debug.Print("An error occured while deserializing json data:")
+                        Debug.Print("[TRACE] Origin String: " & str)
+                        Debug.Print("[TRACE] Exception Type: " & ex.ToString)
+                        Continue While
                     End Try
 
                     Select Case str_obj.Value(Of String)("cmd")
 
                         Case "DANMU_MSG"
+#Region "Example and remark"
+                            '{"info":[[0,1,25,16777215,1469456771,907357409,0,"4d505c40",0],"摸摸阿一",[20940214,"半枫そう",0,0,0,10000],[4,"无常","小十里",22714,6606973],[20,226959,6215679],["ice-dust"]],"cmd":"DANMU_MSG"}
+
+                            '[
+                            '   [
+                            '       弹幕开始时间(默认为0),
+                            '       弹幕类型(默认为1 - 滚动弹幕),
+                            '       弹幕大小(px)(默认为25),
+                            '       弹幕颜色(rrggbb),
+                            '       弹幕发送时间戳(unix),
+                            '       (?) ,
+                            '       弹幕池类型(默认为0 - 普通弹幕池),
+                            '       用户代号,
+                            '       (?) - (默认为0)
+                            '   ],
+                            '   弹幕信息,
+                            '   [
+                            '       用户id,
+                            '       用户名称,
+                            '       (?) ,
+                            '       是否老爷,
+                            '       (?) ,
+                            '       用户权限(默认为10000)
+                            '   ], [ （此处可无）
+                            '       勋章等级,
+                            '       勋章名称,
+                            '       勋章博主名称,
+                            '       勋章房间id,
+                            '       (?)
+                            '   ], [
+                            '       用户等级,
+                            '       用户排名,
+                            '       (?)
+                            '   ], [ （此处可无）
+                            '       用户头衔 -> "sign-one-month" : 月老; "ice-dust" : 钻石星尘
+                            '   ]
+                            ']
+#End Region
                             '暂时先撸这么多参数吧
 
-                            '弹幕颜色(RRGGBB)
                             Dim color As UInteger = str_obj("info").Value(Of JArray)(0)(3)
-                            '弹幕发送UNIX时间戳
                             Dim post_time As UInteger = str_obj("info").Value(Of JArray)(0)(4)
-                            '弹幕内容
                             Dim msg As String = str_obj("info").Value(Of String)(1)
-                            '用户名称
                             Dim user_name As String = str_obj("info").Value(Of JArray)(2)(1)
-                            '用户hash id
                             Dim user_hashid As String = str_obj("info").Value(Of JArray)(0)(7)
                             '勋章等级、名称以及来源up主
                             Dim medal_level As Integer
@@ -826,12 +868,17 @@ Public Class guazi
 
                             RaiseEvent ReceivedComment(post_time, user_name, msg)
                         Case "SEND_GIFT"
+#Region "Example and remark"
+                            '{"cmd":"SEND_GIFT","data":{"giftName":"\u8fa3\u6761","num":6,"uname":"\u841d\u00b7\u5bbe\u6c49","rcost":2793402,"uid":1974757,"top_list":[],"timestamp":1469457764,"giftId":1,"giftType":0,"action":"\u5582\u98df","super":0,"price":100,"rnd":"1469457648","newMedal":0,"medal":1,"capsule":[]},"roomid":22714}
+                            ' no remark
+#End Region
+
                             Dim gift_name As String = str_obj("data").Value(Of String)("giftName")
                             Dim gift_num As Integer = str_obj("data").Value(Of Integer)("num")
                             Dim user_name As String = str_obj("data").Value(Of String)("uname")
-                            'Dim rcost As Integer = str_obj("data").Value(Of Integer)("rcost")
-                            'Dim uid As Integer = str_obj("data").Value(Of Integer)("uid")
-                            'Dim top_list As JArray = str_obj("data").Value(Of JArray)("top_list")
+                            Dim rcost As Integer = str_obj("data").Value(Of Integer)("rcost")
+                            Dim uid As Integer = str_obj("data").Value(Of Integer)("uid")
+                            Dim top_list As JArray = str_obj("data").Value(Of JArray)("top_list")
                             Dim timestamp As Long = str_obj("data").Value(Of Long)("timestamp")
                             Dim gift_id As Integer = str_obj("data").Value(Of Integer)("giftId")
                             Dim gift_type As Integer = str_obj("data").Value(Of Integer)("giftType")
@@ -840,11 +887,15 @@ Public Class guazi
                             Dim price As Integer = str_obj("data").Value(Of Integer)("price")
                             Dim rnd As String = str_obj("data").Value(Of String)("rnd")
                             Dim new_medal As Integer = str_obj("data").Value(Of Integer)("newMedal")
-                            'Dim guardian_score As Integer = str_obj("data").Value(Of Integer)("guardianScore")
+                            'Dim medal As Integer = str_obj("data").Value(Of Integer)("medal")
                             Dim room_id As Integer = str_obj.Value(Of Integer)("roomid")
 
                             RaiseEvent ReceivedGiftSent(timestamp, gift_name, gift_id, gift_num, user_name)
                         Case "WELCOME"
+#Region "Example and remark"
+                            '{"cmd":"WELCOME","data":{"uid":6011599,"uname":"\u96c1\u675e\u5357\u98de","isadmin":0,"vip":1},"roomid":22714}
+                            ' no remark
+#End Region
                             Dim is_admin As Integer = str_obj("data").Value(Of Integer)("isadmin")
                             Dim is_vip As Integer = str_obj("data").Value(Of Integer)("vip")
                             Dim uid As Integer = str_obj("data").Value(Of Integer)("uid")
@@ -853,11 +904,19 @@ Public Class guazi
 
                             RaiseEvent ReceivedWelcome(is_admin, is_vip, user_name)
                         Case "SYS_MSG"
+#Region "Example and remark"
+                            '{"cmd":"SYS_MSG","msg":"\u606d\u559c:?\u3010\u94f6\u5723\u7433\u3011:?\u5728\u76f4\u64ad\u95f4:?\u3010240\u3011:?\u62bd\u5230 \u5927\u53f7\u5c0f\u7535\u89c6\u62b1\u6795\u4e00\u4e2a","rep":1,"styleType":2,"url":""}
+                            ' no remark
+#End Region
                             Dim msg As String = str_obj.Value(Of String)("msg")
                             Dim url As String = str_obj.Value(Of String)("url")
                             RaiseEvent ReceivedSystemMsg(msg, url)
                         Case "SYS_GIFT"
-                            '算了就暂时先一样吧 _(:3」∠)_ 有空再说 有空再说 <-你再懒（╯－＿－）╯╧╧
+
+#Region "Example and remark"
+                            '{"cmd":"SYS_GIFT","msg":"\u6263\u5b50\u6316:? \u5728\u5e05\u70b8\u4e4c\u51ac\u7684:?\u76f4\u64ad\u95f4138:?\u5185\u8d60\u9001:?36:?\u5171100\u4e2a\uff0c\u89e6\u53d11\u6b21\u5228\u51b0\u96e8\u62bd\u5956\uff0c\u5feb\u53bb\u524d\u5f80\u62bd\u5
+                            ' 可能是官方的漏洞？显示不全？
+#End Region
                             Dim msg As String = str_obj.Value(Of String)("msg")
                             Dim url As String = str_obj.Value(Of String)("url")
                             RaiseEvent ReceivedSystemMsg(msg, url)
@@ -979,6 +1038,51 @@ Public Class guazi
         _timeLimitEventThd.Abort()
     End Sub
     Public Event NextEventGrabTime(ByVal time As Date)
+
+
+    '获取用户信息
+    Public Function SyncGetUserInfo() As JObject
+        Dim netstr As New NetStream
+        netstr.ReadWriteTimeout = 5000
+        netstr.Timeout = 5000
+
+        netstr.HttpGet("http://live.bilibili.com/User/getUserInfo?timestamp=" & Int(ToUnixTimestamp(Now) * 1000))
+
+        Dim str As String = netstr.ReadResponseString
+        netstr.Close()
+
+        Debug.Print("Get User Info succeeded, response returned value:")
+        Debug.Print(str)
+
+        Return JsonConvert.DeserializeObject(str)
+    End Function
+
+    '发送弹幕
+    Public Sub SyncSendComment(ByVal msg As String, Optional ByVal color As Color = Nothing, Optional ByVal fontsize As UInteger = 25, Optional ByVal roomid As Integer = -1)
+        If roomid = -1 Then roomid = _RoomId
+        If color.IsEmpty Then color = Color.White
+        If roomid <= 0 Then Return
+
+        Dim req As New NetStream
+        Dim req_param As New Parameters
+        req_param.Add("color", color.ToArgb And &HFFFFFF)
+        req_param.Add("fontsize", fontsize)
+        req_param.Add("mode", 1)
+        req_param.Add("msg", msg)
+        req_param.Add("rnd", rand.Next)
+        req_param.Add("roomid", roomid)
+        Try
+            req.HttpPost("http://live.bilibili.com/msg/send", req_param)
+            Dim rep As String = req.ReadResponseString
+
+            Debug.Print("Send comment succeeded, response returned value:")
+            Debug.Print(rep)
+
+        Catch ex As Exception
+            Debug.Print(ex.ToString)
+        End Try
+        req.Close()
+    End Sub
 End Class
 ''' <summary>
 ''' b站登录函数[附带RSA加密模块]

@@ -142,6 +142,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="b站登录说明v1.txt" />
+    <Content Include="抓包结果..txt" />
     <None Include="icon.ico" />
   </ItemGroup>
   <ItemGroup>

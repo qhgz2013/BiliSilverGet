@@ -71,18 +71,40 @@ Partial Class Form1
         Me.lblSpEventTimeOutput = New System.Windows.Forms.Label()
         Me.Timer2 = New System.Windows.Forms.Timer(Me.components)
         Me.Timer3 = New System.Windows.Forms.Timer(Me.components)
+        Me.GroupBox4 = New System.Windows.Forms.GroupBox()
+        Me.RefreshUserInfo = New System.Windows.Forms.Button()
+        Me.Label10 = New System.Windows.Forms.Label()
+        Me.lblRank = New System.Windows.Forms.Label()
+        Me.lblLv = New System.Windows.Forms.Label()
+        Me.lblVip = New System.Windows.Forms.Label()
+        Me.lblUserExp = New System.Windows.Forms.Label()
+        Me.Label9 = New System.Windows.Forms.Label()
+        Me.lblSilver = New System.Windows.Forms.Label()
+        Me.lblGold = New System.Windows.Forms.Label()
+        Me.pbarUserExp = New System.Windows.Forms.ProgressBar()
+        Me.lblUname = New System.Windows.Forms.Label()
+        Me.Label8 = New System.Windows.Forms.Label()
+        Me.Label7 = New System.Windows.Forms.Label()
+        Me.Label6 = New System.Windows.Forms.Label()
+        Me.Label11 = New System.Windows.Forms.Label()
+        Me.commentMsg = New System.Windows.Forms.TextBox()
+        Me.commentColor = New System.Windows.Forms.ColorDialog()
+        Me.commentColorOutput = New System.Windows.Forms.Panel()
+        Me.Label12 = New System.Windows.Forms.Label()
+        Me.Label13 = New System.Windows.Forms.Label()
         Me.GroupBox1.SuspendLayout()
         Me.GroupBox2.SuspendLayout()
         Me.GroupBox3.SuspendLayout()
+        Me.GroupBox4.SuspendLayout()
         Me.SuspendLayout()
         '
         'TextBox1
         '
-        Me.TextBox1.Location = New System.Drawing.Point(507, 305)
+        Me.TextBox1.Location = New System.Drawing.Point(507, 431)
         Me.TextBox1.Multiline = True
         Me.TextBox1.Name = "TextBox1"
         Me.TextBox1.ScrollBars = System.Windows.Forms.ScrollBars.Both
-        Me.TextBox1.Size = New System.Drawing.Size(498, 77)
+        Me.TextBox1.Size = New System.Drawing.Size(500, 77)
         Me.TextBox1.TabIndex = 0
         Me.TextBox1.WordWrap = False
         '
@@ -101,7 +123,7 @@ Partial Class Form1
         Me.ListView1.FullRowSelect = True
         Me.ListView1.Location = New System.Drawing.Point(507, 26)
         Me.ListView1.Name = "ListView1"
-        Me.ListView1.Size = New System.Drawing.Size(498, 273)
+        Me.ListView1.Size = New System.Drawing.Size(498, 399)
         Me.ListView1.TabIndex = 10
         Me.ListView1.UseCompatibleStateImageBehavior = False
         Me.ListView1.View = System.Windows.Forms.View.Details
@@ -140,7 +162,7 @@ Partial Class Form1
         Me.GroupBox1.Controls.Add(Me.AutoLiveOn)
         Me.GroupBox1.Controls.Add(Me.AutoStart)
         Me.GroupBox1.Controls.Add(Me.AutoShutdown)
-        Me.GroupBox1.Location = New System.Drawing.Point(6, 26)
+        Me.GroupBox1.Location = New System.Drawing.Point(4, 127)
         Me.GroupBox1.Name = "GroupBox1"
         Me.GroupBox1.Size = New System.Drawing.Size(495, 356)
         Me.GroupBox1.TabIndex = 11
@@ -441,7 +463,7 @@ Partial Class Form1
         Me.GroupBox3.Controls.Add(Me.Label4)
         Me.GroupBox3.Controls.Add(Me.remainSpEvent)
         Me.GroupBox3.Controls.Add(Me.lblSpEventTimeOutput)
-        Me.GroupBox3.Location = New System.Drawing.Point(6, 402)
+        Me.GroupBox3.Location = New System.Drawing.Point(4, 489)
         Me.GroupBox3.Name = "GroupBox3"
         Me.GroupBox3.Size = New System.Drawing.Size(495, 58)
         Me.GroupBox3.TabIndex = 18
@@ -488,11 +510,203 @@ Partial Class Form1
         'Timer3
         '
         '
+        'GroupBox4
+        '
+        Me.GroupBox4.Controls.Add(Me.RefreshUserInfo)
+        Me.GroupBox4.Controls.Add(Me.Label10)
+        Me.GroupBox4.Controls.Add(Me.lblRank)
+        Me.GroupBox4.Controls.Add(Me.Label13)
+        Me.GroupBox4.Controls.Add(Me.lblLv)
+        Me.GroupBox4.Controls.Add(Me.lblVip)
+        Me.GroupBox4.Controls.Add(Me.lblUserExp)
+        Me.GroupBox4.Controls.Add(Me.Label9)
+        Me.GroupBox4.Controls.Add(Me.lblSilver)
+        Me.GroupBox4.Controls.Add(Me.lblGold)
+        Me.GroupBox4.Controls.Add(Me.pbarUserExp)
+        Me.GroupBox4.Controls.Add(Me.lblUname)
+        Me.GroupBox4.Controls.Add(Me.Label8)
+        Me.GroupBox4.Controls.Add(Me.Label7)
+        Me.GroupBox4.Controls.Add(Me.Label6)
+        Me.GroupBox4.Location = New System.Drawing.Point(4, 26)
+        Me.GroupBox4.Name = "GroupBox4"
+        Me.GroupBox4.Size = New System.Drawing.Size(497, 95)
+        Me.GroupBox4.TabIndex = 19
+        Me.GroupBox4.TabStop = False
+        Me.GroupBox4.Text = "用户信息"
+        '
+        'RefreshUserInfo
+        '
+        Me.RefreshUserInfo.Location = New System.Drawing.Point(399, 64)
+        Me.RefreshUserInfo.Name = "RefreshUserInfo"
+        Me.RefreshUserInfo.Size = New System.Drawing.Size(90, 25)
+        Me.RefreshUserInfo.TabIndex = 0
+        Me.RefreshUserInfo.Text = "刷新用户信息"
+        Me.RefreshUserInfo.UseVisualStyleBackColor = True
+        '
+        'Label10
+        '
+        Me.Label10.AutoSize = True
+        Me.Label10.Location = New System.Drawing.Point(277, 61)
+        Me.Label10.Name = "Label10"
+        Me.Label10.Size = New System.Drawing.Size(41, 12)
+        Me.Label10.TabIndex = 20
+        Me.Label10.Text = "排名："
+        '
+        'lblRank
+        '
+        Me.lblRank.AutoSize = True
+        Me.lblRank.Location = New System.Drawing.Point(324, 61)
+        Me.lblRank.Name = "lblRank"
+        Me.lblRank.Size = New System.Drawing.Size(0, 12)
+        Me.lblRank.TabIndex = 20
+        '
+        'lblLv
+        '
+        Me.lblLv.AutoSize = True
+        Me.lblLv.Location = New System.Drawing.Point(442, 39)
+        Me.lblLv.Name = "lblLv"
+        Me.lblLv.Size = New System.Drawing.Size(0, 12)
+        Me.lblLv.TabIndex = 19
+        '
+        'lblVip
+        '
+        Me.lblVip.AutoSize = True
+        Me.lblVip.Location = New System.Drawing.Point(8, 61)
+        Me.lblVip.Name = "lblVip"
+        Me.lblVip.Size = New System.Drawing.Size(0, 12)
+        Me.lblVip.TabIndex = 18
+        '
+        'lblUserExp
+        '
+        Me.lblUserExp.AutoSize = True
+        Me.lblUserExp.Location = New System.Drawing.Point(284, 39)
+        Me.lblUserExp.Name = "lblUserExp"
+        Me.lblUserExp.Size = New System.Drawing.Size(0, 12)
+        Me.lblUserExp.TabIndex = 17
+        '
+        'Label9
+        '
+        Me.Label9.AutoSize = True
+        Me.Label9.Location = New System.Drawing.Point(8, 39)
+        Me.Label9.Name = "Label9"
+        Me.Label9.Size = New System.Drawing.Size(65, 12)
+        Me.Label9.TabIndex = 2
+        Me.Label9.Text = "用户经验："
+        '
+        'lblSilver
+        '
+        Me.lblSilver.AutoSize = True
+        Me.lblSilver.Location = New System.Drawing.Point(377, 17)
+        Me.lblSilver.Name = "lblSilver"
+        Me.lblSilver.Size = New System.Drawing.Size(0, 12)
+        Me.lblSilver.TabIndex = 1
+        '
+        'lblGold
+        '
+        Me.lblGold.AutoSize = True
+        Me.lblGold.Location = New System.Drawing.Point(234, 17)
+        Me.lblGold.Name = "lblGold"
+        Me.lblGold.Size = New System.Drawing.Size(0, 12)
+        Me.lblGold.TabIndex = 1
+        '
+        'pbarUserExp
+        '
+        Me.pbarUserExp.Location = New System.Drawing.Point(82, 41)
+        Me.pbarUserExp.Name = "pbarUserExp"
+        Me.pbarUserExp.Size = New System.Drawing.Size(196, 10)
+        Me.pbarUserExp.TabIndex = 8
+        '
+        'lblUname
+        '
+        Me.lblUname.AutoSize = True
+        Me.lblUname.Location = New System.Drawing.Point(80, 17)
+        Me.lblUname.Name = "lblUname"
+        Me.lblUname.Size = New System.Drawing.Size(0, 12)
+        Me.lblUname.TabIndex = 0
+        '
+        'Label8
+        '
+        Me.Label8.AutoSize = True
+        Me.Label8.Location = New System.Drawing.Point(324, 17)
+        Me.Label8.Name = "Label8"
+        Me.Label8.Size = New System.Drawing.Size(53, 12)
+        Me.Label8.TabIndex = 0
+        Me.Label8.Text = "银瓜子："
+        '
+        'Label7
+        '
+        Me.Label7.AutoSize = True
+        Me.Label7.Location = New System.Drawing.Point(175, 17)
+        Me.Label7.Name = "Label7"
+        Me.Label7.Size = New System.Drawing.Size(53, 12)
+        Me.Label7.TabIndex = 0
+        Me.Label7.Text = "金瓜子："
+        '
+        'Label6
+        '
+        Me.Label6.AutoSize = True
+        Me.Label6.Location = New System.Drawing.Point(8, 17)
+        Me.Label6.Name = "Label6"
+        Me.Label6.Size = New System.Drawing.Size(65, 12)
+        Me.Label6.TabIndex = 0
+        Me.Label6.Text = "用户名称："
+        '
+        'Label11
+        '
+        Me.Label11.AutoSize = True
+        Me.Label11.Location = New System.Drawing.Point(505, 522)
+        Me.Label11.Name = "Label11"
+        Me.Label11.Size = New System.Drawing.Size(59, 12)
+        Me.Label11.TabIndex = 20
+        Me.Label11.Text = "发送弹幕:"
+        '
+        'commentMsg
+        '
+        Me.commentMsg.Location = New System.Drawing.Point(570, 519)
+        Me.commentMsg.Name = "commentMsg"
+        Me.commentMsg.Size = New System.Drawing.Size(352, 21)
+        Me.commentMsg.TabIndex = 21
+        '
+        'commentColor
+        '
+        Me.commentColor.AnyColor = True
+        Me.commentColor.Color = System.Drawing.Color.White
+        '
+        'commentColorOutput
+        '
+        Me.commentColorOutput.Location = New System.Drawing.Point(962, 521)
+        Me.commentColorOutput.Name = "commentColorOutput"
+        Me.commentColorOutput.Size = New System.Drawing.Size(17, 16)
+        Me.commentColorOutput.TabIndex = 22
+        '
+        'Label12
+        '
+        Me.Label12.AutoSize = True
+        Me.Label12.Location = New System.Drawing.Point(921, 522)
+        Me.Label12.Name = "Label12"
+        Me.Label12.Size = New System.Drawing.Size(35, 12)
+        Me.Label12.TabIndex = 20
+        Me.Label12.Text = "颜色:"
+        '
+        'Label13
+        '
+        Me.Label13.AutoSize = True
+        Me.Label13.Location = New System.Drawing.Point(395, 39)
+        Me.Label13.Name = "Label13"
+        Me.Label13.Size = New System.Drawing.Size(41, 12)
+        Me.Label13.TabIndex = 19
+        Me.Label13.Text = "等级："
+        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 12.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(1095, 472)
+        Me.ClientSize = New System.Drawing.Size(1015, 559)
+        Me.Controls.Add(Me.commentColorOutput)
+        Me.Controls.Add(Me.commentMsg)
+        Me.Controls.Add(Me.Label12)
+        Me.Controls.Add(Me.Label11)
+        Me.Controls.Add(Me.GroupBox4)
         Me.Controls.Add(Me.GroupBox3)
         Me.Controls.Add(Me.lblLogout)
         Me.Controls.Add(Me.bRoomId)
@@ -505,12 +719,14 @@ Partial Class Form1
         Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
         Me.MaximizeBox = False
         Me.Name = "Form1"
-        Me.Text = "Form1 <- 懒得改了 又名 瓜子搜挂机 ~ 终极绝杀版 ~"
+        Me.Text = "瓜子搜刮机 ~ 终极绝杀版 ~"
         Me.GroupBox1.ResumeLayout(False)
         Me.GroupBox1.PerformLayout()
         Me.GroupBox2.ResumeLayout(False)
         Me.GroupBox3.ResumeLayout(False)
         Me.GroupBox3.PerformLayout()
+        Me.GroupBox4.ResumeLayout(False)
+        Me.GroupBox4.PerformLayout()
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -562,4 +778,25 @@ Partial Class Form1
     Friend WithEvents lblSpEventTimeOutput As Label
     Friend WithEvents Timer2 As Timer
     Friend WithEvents Timer3 As Timer
+    Friend WithEvents GroupBox4 As GroupBox
+    Friend WithEvents lblUname As Label
+    Friend WithEvents Label6 As Label
+    Friend WithEvents RefreshUserInfo As Button
+    Friend WithEvents Label10 As Label
+    Friend WithEvents lblRank As Label
+    Friend WithEvents lblLv As Label
+    Friend WithEvents lblVip As Label
+    Friend WithEvents lblUserExp As Label
+    Friend WithEvents Label9 As Label
+    Friend WithEvents lblSilver As Label
+    Friend WithEvents lblGold As Label
+    Friend WithEvents pbarUserExp As ProgressBar
+    Friend WithEvents Label8 As Label
+    Friend WithEvents Label7 As Label
+    Friend WithEvents Label11 As Label
+    Friend WithEvents commentMsg As TextBox
+    Friend WithEvents commentColor As ColorDialog
+    Friend WithEvents commentColorOutput As Panel
+    Friend WithEvents Label12 As Label
+    Friend WithEvents Label13 As Label
 End Class

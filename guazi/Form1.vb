@@ -105,6 +105,7 @@ Public Class Form1
                                   remainTime.Value = 0
                                   remainTime.Maximum = 0
                                   lblGuaziCount.Text = ""
+                                  RefreshUserInfo.PerformClick()
                               End Sub))
     End Sub
     '自动关机的选项改变，若没有勾选但是已经倒计关机时执行取消关机的指令
@@ -154,6 +155,7 @@ Public Class Form1
         End If
 
         'test area
+        commentColorOutput.BackColor = commentColor.Color
     End Sub
 
     'cookie debugger
@@ -173,6 +175,7 @@ Public Class Form1
                                   lblGuaziCount.Text = "下次可领取: " & silver & "瓜子"
                                   remainTime.Maximum = CInt((_expireTime - Now).TotalSeconds)
                                   remainTime.Value = 0
+                                  RefreshUserInfo.PerformClick()
                               End Sub))
     End Sub
     Private Sub ChangeProgressTime(sender As Object, e As EventArgs) Handles Timer1.Tick
@@ -277,6 +280,7 @@ Public Class Form1
         RefreshPlayerBag.PerformClick()
         AutoStartSpecialEvent_CheckedChanged(sender, e)
         AutoLiveOn_CheckedChanged(sender, e)
+        'RefreshUserInfo.PerformClick()
     End Sub
 
 #End Region
@@ -431,9 +435,17 @@ Public Class Form1
     '一堆不痛不痒的回调函数
     Private Sub onSucceededSign() Handles gz.DoSignSucceeded
         _last_sign_date = Now
+        Me.Invoke(Sub()
+                      RefreshUserInfo.PerformClick()
+                  End Sub)
     End Sub
     Private Sub onSucceededGettingDailyGift() Handles gz.GetDailyGiftFinished
         _last_get_gift_date = Now
+    End Sub
+    Private Sub onSucceededSendingGift() Handles gz.SendDailyGiftFinished
+        Me.Invoke(Sub()
+                      RefreshUserInfo.PerformClick()
+                  End Sub)
     End Sub
 #End Region
 #Region "脚本4 - 自动挂经验"
@@ -445,6 +457,7 @@ Public Class Form1
             gz.AsyncBeginLiveOn()
         Else
             gz.AsyncStopLiveOn()
+            Timer2.Enabled = False
             remainHeartbeatTime.Value = 0
             remainHeartbeatTime.Maximum = 0
             lblRemainHeartbeatTimeOutput.Text = ""
@@ -459,6 +472,7 @@ Public Class Form1
                 remainHeartbeatTime.Maximum = CInt((_exp_expire_time - Now).TotalSeconds)
                 remainHeartbeatTime.Value = 0
                 Timer2.Enabled = True
+                RefreshUserInfo.PerformClick()
             End Sub)
     End Sub
 
@@ -483,6 +497,7 @@ Public Class Form1
             gz.AsyncBeginTimeLimitedEvent()
         Else
             gz.AsyncStopTimeLimitedEvent()
+            Timer3.Enabled = False
             remainSpEvent.Value = 0
             remainSpEvent.Maximum = 0
             lblSpEventTimeOutput.Text = ""
@@ -496,6 +511,7 @@ Public Class Form1
                 remainSpEvent.Maximum = CInt((_sp_event_expire_time - Now).TotalSeconds)
                 remainSpEvent.Value = 0
                 Timer3.Enabled = True
+                RefreshPlayerBag.PerformClick()
             End Sub)
     End Sub
 
@@ -503,10 +519,67 @@ Public Class Form1
         If _sp_event_expire_time < Now Then
             Timer3.Enabled = False
         Else
-            Dim ts As TimeSpan = _exp_expire_time - Now
+            Dim ts As TimeSpan = _sp_event_expire_time - Now
             remainSpEvent.Value = remainSpEvent.Maximum - CInt(ts.TotalSeconds)
             lblSpEventTimeOutput.Text = ts.Minutes & ":" & Format(ts.Seconds, "00")
         End If
     End Sub
 #End Region
+
+    Private Sub RefreshUserInfo_Click(sender As Object, e As EventArgs) Handles RefreshUserInfo.Click
+
+        ThreadPool.QueueUserWorkItem(
+        Sub()
+            Try
+                Dim json As JObject = gz.SyncGetUserInfo
+                '{"code":"REPONSE_OK","msg":"ok","data":{"uname":"\u80a5\u80a5\u7684\u718a\u732b","face":"http:\/\/i0.hdslb.com\/bfs\/face\/c12bbf876292dd52ea9a691d78e86abd2b5dc493.jpg","silver":85224,"gold":0,"achieve":115,"vip":0,"svip":0,"user_level":17,"user_next_level":18,"user_intimacy":685704,"user_next_intimacy":1000000,"user_level_rank":345626,"billCoin":650}}
+                json = json.Value(Of JObject)("data")
+                Dim username As String = json.Value(Of String)("uname")
+                Dim curlv As Integer = json.Value(Of Integer)("user_level")
+                Dim nextlv As Integer = json.Value(Of Integer)("user_next_level")
+                Dim curexp As ULong = json.Value(Of ULong)("user_intimacy")
+                Dim nextexp As ULong = json.Value(Of ULong)("user_next_intimacy")
+                Dim rank As UInteger = json.Value(Of UInteger)("user_level_rank")
+                Dim silver As UInteger = json.Value(Of UInteger)("silver")
+                Dim gold As UInteger = json.Value(Of UInteger)("gold")
+                Dim vip As Integer = ((json.Value(Of Integer)("svip") And 1) << 1) Or (json.Value(Of Integer)("vip") And 1)
+
+                'output
+                Me.Invoke(
+                    Sub()
+                        lblUserExp.Text = curexp & "/" & nextexp
+                        lblRank.Text = rank
+                        lblSilver.Text = silver
+                        lblGold.Text = gold
+                        lblVip.Text = If(vip And 2, "你是土豪老爷", If(vip And 1, "你是老爷", ""))
+                        lblUname.Text = username
+                        pbarUserExp.Maximum = nextexp
+                        pbarUserExp.Value = curexp
+                        lblLv.Text = curlv
+                    End Sub)
+            Catch ex As Exception
+
+            End Try
+        End Sub)
+
+    End Sub
+
+    Private Sub commentColorOutput_Click(sender As Object, e As EventArgs) Handles commentColorOutput.Click
+        If commentColor.ShowDialog <> DialogResult.OK Then Return
+        commentColorOutput.BackColor = commentColor.Color
+    End Sub
+
+    Private Sub commentMsg_KeyPress(sender As Object, e As KeyPressEventArgs) Handles commentMsg.KeyPress
+        If e.KeyChar = vbCr Then
+            e.Handled = True
+            If String.IsNullOrEmpty(commentMsg.Text) Then Return
+            Dim msg As String = commentMsg.Text
+            commentMsg.Text = ""
+            ThreadPool.QueueUserWorkItem(
+                Sub()
+                    gz.SyncSendComment(msg, commentColor.Color)
+                End Sub)
+
+        End If
+    End Sub
 End Class

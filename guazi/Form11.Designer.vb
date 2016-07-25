@@ -65,6 +65,16 @@ Namespace My.Resources
         End Property
         
         '''<summary>
+        '''  查找类似于 {X=438,Y=17} 的 System.Drawing.Point 类型的本地化资源。
+        '''</summary>
+        Friend Shared ReadOnly Property commentColor_TrayLocation() As System.Drawing.Point
+            Get
+                Dim obj As Object = ResourceManager.GetObject("commentColor.TrayLocation", resourceCulture)
+                Return CType(obj,System.Drawing.Point)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  查找类似于 {X=109,Y=17} 的 System.Drawing.Point 类型的本地化资源。
         '''</summary>
         Friend Shared ReadOnly Property SaveFileDialog1_TrayLocation() As System.Drawing.Point
