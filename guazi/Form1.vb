@@ -10,7 +10,10 @@ Public Class Form1
     'multithread safe debug output
     Friend Sub DebugOutput(ByVal s As String) Handles gz.DebugOutput
         Dim del As New _debugOutputSafe(AddressOf _debugOutput)
-        Me.Invoke(del, s)
+        Try
+            Me.Invoke(del, s)
+        Catch ex As Exception
+        End Try
     End Sub
     Friend Delegate Sub _debugOutputSafe(ByVal s As String)
     Friend Sub _debugOutput(ByVal s As String)
@@ -59,6 +62,7 @@ Public Class Form1
         AutoGrab.Checked = obj.Value(Of Boolean)("auto_grab_silver")
         AutoStartSpecialEvent.Checked = obj.Value(Of Boolean)("auto_start_sp_event")
         AutoLiveOn.Checked = obj.Value(Of Boolean)("auto_get_exp")
+        AutoJoiningAct.Checked = obj.Value(Of Boolean)("auto_join_activity")
         ReceiveSocket.Checked = obj.Value(Of Boolean)("receive_room_msg")
         _last_sign_date = FromUnixTimeStamp(obj.Value(Of Double)("last_sign_date"))
         _last_finished_grabbing_date = FromUnixTimeStamp(obj.Value(Of Double)("last_finish_grabbing_date"))
@@ -76,6 +80,7 @@ Public Class Form1
         obj.Add("auto_grab_silver", AutoGrab.Checked)
         obj.Add("auto_start_sp_event", AutoStartSpecialEvent.Checked)
         obj.Add("auto_get_exp", AutoLiveOn.Checked)
+        obj.Add("auto_join_activity", AutoJoiningAct.Checked)
         obj.Add("receive_room_msg", ReceiveSocket.Checked)
         obj.Add("last_sign_date", ToUnixTimestamp(_last_sign_date))
         obj.Add("last_finish_grabbing_date", ToUnixTimestamp(_last_finished_grabbing_date))
@@ -105,7 +110,6 @@ Public Class Form1
                                   remainTime.Value = 0
                                   remainTime.Maximum = 0
                                   lblGuaziCount.Text = ""
-                                  RefreshUserInfo.PerformClick()
                               End Sub))
     End Sub
     '自动关机的选项改变，若没有勾选但是已经倒计关机时执行取消关机的指令
@@ -129,12 +133,23 @@ Public Class Form1
     Friend Sub Form1_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
         Utils.NetUtils.SaveCookie(Application.StartupPath & "\cookie.dat")
         SaveGuaziConfig()
-        End
+        gz.AsyncEndGrabbingSilver()
+        gz.AsyncStopDownloadStream()
+        gz.AsyncStopLiveOn()
+        gz.AsyncStopReceiveComment()
+        gz.AsyncStopTimeLimitedEvent()
+        gz.AsyncStopListeningAct()
+        Me.Hide()
+        'End
     End Sub
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         _initflag = False
         '读取cookie
         Utils.NetUtils.LoadCookie(Application.StartupPath & "\cookie.dat")
+        'Trace配置
+        If IO.File.Exists("trace.log") Then IO.File.Delete("trace.log")
+        Trace.Listeners.Add(New TextWriterTraceListener("trace.log"))
+        Trace.AutoFlush = True
         '登陆检测
         If Not CheckLogin() Then
             frmLogin.ShowDialog()
@@ -147,15 +162,16 @@ Public Class Form1
         _initflag = True
 
         If AutoStart.Checked Then
-            'ThreadPool.QueueUserWorkItem(
-            'Sub()
             gz.RoomURL = bRoomId.Text
             goFuck(sender, e)
-            'End Sub)
         End If
 
-        'test area
+        '弹幕颜色
         commentColorOutput.BackColor = commentColor.Color
+
+        commentColor.CustomColors = New Integer() {&HFFFFFF, &H6868FF, &HFFCC66, &HFCFF00, &HFF7E, &H4FEDFF, &H98FF, &HFFFFFF,
+        &HFFFFFF, &HFFFFFF, &HFFFFFF, &HFFFFFF, &HFFFFFF, &HFFFFFF, &HFFFFFF, &HFFFFFF, &HFFFFFF}
+
     End Sub
 
     'cookie debugger
@@ -175,7 +191,6 @@ Public Class Form1
                                   lblGuaziCount.Text = "下次可领取: " & silver & "瓜子"
                                   remainTime.Maximum = CInt((_expireTime - Now).TotalSeconds)
                                   remainTime.Value = 0
-                                  RefreshUserInfo.PerformClick()
                               End Sub))
     End Sub
     Private Sub ChangeProgressTime(sender As Object, e As EventArgs) Handles Timer1.Tick
@@ -271,16 +286,18 @@ Public Class Form1
     End Sub
 
     Private Sub goFuck(sender As Object, e As EventArgs)
+        RefreshPlayerBag.PerformClick()
+        RefreshUserInfo.PerformClick()
+
         AutoSign_CheckedChanged(sender, e)
         AutoGetItem_CheckedChanged(sender, e)
         AutoSendItem_CheckedChanged(sender, e)
         AutoGrab_CheckedChanged(sender, e)
         ReceiveSocket_CheckedChanged(sender, e)
 
-        RefreshPlayerBag.PerformClick()
         AutoStartSpecialEvent_CheckedChanged(sender, e)
         AutoLiveOn_CheckedChanged(sender, e)
-        'RefreshUserInfo.PerformClick()
+        AutoJoiningAct_CheckedChanged(sender, e)
     End Sub
 
 #End Region
@@ -357,7 +374,7 @@ Public Class Form1
                                   OnlinePeople.Text = "在线人数:" & people
                               End Sub))
     End Sub
-    Private Sub OnReceivingSystemMsg(ByVal msg As String, ByVal refer_url As String) Handles gz.ReceivedSystemMsg
+    Private Sub OnReceivingSystemMsg(ByVal msg As String, ByVal refer_url As String, ByVal roomid As UInteger) Handles gz.ReceivedSystemMsg
         DebugOutput("收到系统消息:" & msg)
     End Sub
 #End Region
@@ -413,7 +430,6 @@ Public Class Form1
                 ThreadPool.QueueUserWorkItem(
                     Sub()
                         gz.SyncSendGift(gift_id, bag_id, input_num)
-                        RefreshPlayerBag_Click(sender, e)
                     End Sub)
             Else
                 MessageBox.Show(RandomText(New String() {
@@ -435,16 +451,22 @@ Public Class Form1
     '一堆不痛不痒的回调函数
     Private Sub onSucceededSign() Handles gz.DoSignSucceeded
         _last_sign_date = Now
-        Me.Invoke(Sub()
-                      RefreshUserInfo.PerformClick()
-                  End Sub)
     End Sub
     Private Sub onSucceededGettingDailyGift() Handles gz.GetDailyGiftFinished
         _last_get_gift_date = Now
     End Sub
     Private Sub onSucceededSendingGift() Handles gz.SendDailyGiftFinished
+
+    End Sub
+
+    Private Sub onUserInfoChanged() Handles gz.UserInfoChanged
         Me.Invoke(Sub()
                       RefreshUserInfo.PerformClick()
+                  End Sub)
+    End Sub
+    Private Sub onUserBaggageChanged() Handles gz.UserBaggageChanged
+        Me.Invoke(Sub()
+                      RefreshPlayerBag.PerformClick()
                   End Sub)
     End Sub
 #End Region
@@ -472,7 +494,6 @@ Public Class Form1
                 remainHeartbeatTime.Maximum = CInt((_exp_expire_time - Now).TotalSeconds)
                 remainHeartbeatTime.Value = 0
                 Timer2.Enabled = True
-                RefreshUserInfo.PerformClick()
             End Sub)
     End Sub
 
@@ -511,7 +532,6 @@ Public Class Form1
                 remainSpEvent.Maximum = CInt((_sp_event_expire_time - Now).TotalSeconds)
                 remainSpEvent.Value = 0
                 Timer3.Enabled = True
-                RefreshPlayerBag.PerformClick()
             End Sub)
     End Sub
 
@@ -582,4 +602,16 @@ Public Class Form1
 
         End If
     End Sub
+
+    '参加活动
+    Private Sub AutoJoiningAct_CheckedChanged(sender As Object, e As EventArgs) Handles AutoJoiningAct.CheckedChanged
+        If Not _initflag Then Return
+        SaveGuaziConfig()
+        If AutoJoiningAct.Checked Then
+            gz.AsyncListenAct()
+        Else
+            gz.AsyncStopListeningAct()
+        End If
+    End Sub
+
 End Class

@@ -49,6 +49,7 @@ Partial Class Form1
         Me.lblGuaziCount = New System.Windows.Forms.Label()
         Me.lblTimeOutput = New System.Windows.Forms.Label()
         Me.AutoGetItem = New System.Windows.Forms.CheckBox()
+        Me.AutoJoiningAct = New System.Windows.Forms.CheckBox()
         Me.AutoSendItem = New System.Windows.Forms.CheckBox()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.remainTime = New System.Windows.Forms.ProgressBar()
@@ -75,6 +76,7 @@ Partial Class Form1
         Me.RefreshUserInfo = New System.Windows.Forms.Button()
         Me.Label10 = New System.Windows.Forms.Label()
         Me.lblRank = New System.Windows.Forms.Label()
+        Me.Label13 = New System.Windows.Forms.Label()
         Me.lblLv = New System.Windows.Forms.Label()
         Me.lblVip = New System.Windows.Forms.Label()
         Me.lblUserExp = New System.Windows.Forms.Label()
@@ -91,7 +93,6 @@ Partial Class Form1
         Me.commentColor = New System.Windows.Forms.ColorDialog()
         Me.commentColorOutput = New System.Windows.Forms.Panel()
         Me.Label12 = New System.Windows.Forms.Label()
-        Me.Label13 = New System.Windows.Forms.Label()
         Me.GroupBox1.SuspendLayout()
         Me.GroupBox2.SuspendLayout()
         Me.GroupBox3.SuspendLayout()
@@ -153,6 +154,7 @@ Partial Class Form1
         Me.GroupBox1.Controls.Add(Me.lblGuaziCount)
         Me.GroupBox1.Controls.Add(Me.lblTimeOutput)
         Me.GroupBox1.Controls.Add(Me.AutoGetItem)
+        Me.GroupBox1.Controls.Add(Me.AutoJoiningAct)
         Me.GroupBox1.Controls.Add(Me.AutoSendItem)
         Me.GroupBox1.Controls.Add(Me.Label3)
         Me.GroupBox1.Controls.Add(Me.remainTime)
@@ -327,6 +329,16 @@ Partial Class Form1
         Me.AutoGetItem.TabIndex = 5
         Me.AutoGetItem.Text = "自动领取每日道具"
         Me.AutoGetItem.UseVisualStyleBackColor = True
+        '
+        'AutoJoiningAct
+        '
+        Me.AutoJoiningAct.AutoSize = True
+        Me.AutoJoiningAct.Location = New System.Drawing.Point(13, 208)
+        Me.AutoJoiningAct.Name = "AutoJoiningAct"
+        Me.AutoJoiningAct.Size = New System.Drawing.Size(120, 16)
+        Me.AutoJoiningAct.TabIndex = 5
+        Me.AutoJoiningAct.Text = "自动参加抽奖活动"
+        Me.AutoJoiningAct.UseVisualStyleBackColor = True
         '
         'AutoSendItem
         '
@@ -560,6 +572,15 @@ Partial Class Form1
         Me.lblRank.Size = New System.Drawing.Size(0, 12)
         Me.lblRank.TabIndex = 20
         '
+        'Label13
+        '
+        Me.Label13.AutoSize = True
+        Me.Label13.Location = New System.Drawing.Point(395, 39)
+        Me.Label13.Name = "Label13"
+        Me.Label13.Size = New System.Drawing.Size(41, 12)
+        Me.Label13.TabIndex = 19
+        Me.Label13.Text = "等级："
+        '
         'lblLv
         '
         Me.lblLv.AutoSize = True
@@ -688,15 +709,6 @@ Partial Class Form1
         Me.Label12.TabIndex = 20
         Me.Label12.Text = "颜色:"
         '
-        'Label13
-        '
-        Me.Label13.AutoSize = True
-        Me.Label13.Location = New System.Drawing.Point(395, 39)
-        Me.Label13.Name = "Label13"
-        Me.Label13.Size = New System.Drawing.Size(41, 12)
-        Me.Label13.TabIndex = 19
-        Me.Label13.Text = "等级："
-        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 12.0!)
@@ -799,4 +811,5 @@ Partial Class Form1
     Friend WithEvents commentColorOutput As Panel
     Friend WithEvents Label12 As Label
     Friend WithEvents Label13 As Label
+    Friend WithEvents AutoJoiningAct As CheckBox
 End Class

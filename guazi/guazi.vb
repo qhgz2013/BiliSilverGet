@@ -1,5 +1,6 @@
 ﻿'b站挂瓜子的脚本而已
 
+'转载部分的声明
 'Author: Beining --<i@cnbeining.com>
 'Co-op: SuperFashi
 'Purpose: Auto grab silver of Bilibili
@@ -8,9 +9,7 @@
 ' https://www.cnbeining.com/
 ' https://github.com/cnbeining
 
-'source code : python ->  vb .net
-'translator: pandasxd (4/3/2016)
-
+'source code : python -> vb .net
 Imports System.Threading
 Imports System.Text
 Imports System.Text.RegularExpressions
@@ -44,8 +43,6 @@ Public Class guazi
     Private Const SECRETKEY As String = "2ad42749773c441109bdc0191257a664"
     Private Const VER As String = "0.98.86"
 
-    Private Const DEBUG_RETURN_INFO As Boolean = False
-
     'grabbing silver module
     Private Function calc_sign(ByVal str As String) As String
         Dim md5 As New System.Security.Cryptography.MD5CryptoServiceProvider
@@ -74,7 +71,7 @@ Public Class guazi
                         je = get_new_task_time_and_award()
                     Catch ex As Exception
                         RaiseEvent DebugOutput(ex.ToString)
-                        Debug.Print(ex.ToString)
+                        Trace.TraceError(ex.ToString)
                     End Try
                     Dim code As Integer = je.Value(Of Integer)("code")
                     If code = -10017 Then
@@ -104,7 +101,7 @@ Public Class guazi
                         loop_end_flag = CType(json("data"), JObject).Value(Of Boolean)("isAward")
                     Catch ex As Exception
                         RaiseEvent DebugOutput(ex.ToString)
-                        Debug.Print(ex.ToString)
+                        Trace.TraceError(ex.ToString)
                     Finally
                         sw.Stop()
                         request_ms = sw.ElapsedMilliseconds
@@ -123,7 +120,7 @@ Public Class guazi
                         plus_time = award_requests()
                     Catch ex As Exception
                         RaiseEvent DebugOutput(ex.ToString)
-                        Debug.Print(ex.ToString)
+                        Trace.TraceError(ex.ToString)
                     Finally
                         sw.Stop()
                         request_ms = sw.ElapsedMilliseconds
@@ -150,12 +147,13 @@ Public Class guazi
                     End If
                 Catch ex As Exception
                     RaiseEvent DebugOutput(ex.ToString)
-                    Debug.Print(ex.ToString)
+                    Trace.TraceError(ex.ToString)
                 End Try
 
             Loop
         Catch ex As Exception
             RaiseEvent DebugOutput("[ERR] 抛出异常: " & vbCrLf & ex.ToString)
+            Trace.TraceError(ex.ToString)
         End Try
     End Sub
 
@@ -188,8 +186,10 @@ Public Class guazi
 
         str = req.ReadResponseString
 
-        Debug.Print("Get room #" & _RoomURL & "(" & _RoomId & ") info succeeded, response returned value:")
-        Debug.Print(str)
+        Trace.TraceInformation("Get room #" & _RoomURL & "(" & _RoomId & ") info succeeded, response returned value:")
+        Trace.Indent()
+        Trace.TraceInformation(str)
+        Trace.Unindent()
 
         req.Close()
 
@@ -221,8 +221,10 @@ Public Class guazi
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
 
-        Debug.Print("Get new tasks succeeded, response returned value:")
-        Debug.Print(str)
+        Trace.TraceInformation("Get new tasks succeeded, response returned value:")
+        Trace.Indent()
+        Trace.TraceInformation(str)
+        Trace.Unindent()
 
         req.Close()
 
@@ -250,8 +252,10 @@ Public Class guazi
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
 
-        Debug.Print("Send Heartbeat succeeded, response returned value:")
-        Debug.Print(str)
+        Trace.TraceInformation("Send Heartbeat succeeded, response returned value:")
+        Trace.Indent()
+        Trace.TraceInformation(str)
+        Trace.Unindent()
 
         Dim a As JObject = JsonConvert.DeserializeObject(str)
         Dim statuscode As HttpStatusCode = req.HTTP_Response.StatusCode
@@ -279,9 +283,10 @@ Public Class guazi
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
 
-        Debug.Print("Get award succeeded, response returned value:")
-        Debug.Print(str)
-
+        Trace.TraceInformation("Get award succeeded, response returned value:")
+        Trace.Indent()
+        Trace.TraceInformation(str)
+        Trace.Unindent()
 
         Dim a As JObject = JsonConvert.DeserializeObject(str)
         Dim statuscode As HttpStatusCode = req.HTTP_Response.StatusCode
@@ -290,6 +295,9 @@ Public Class guazi
         If a.Value(Of Integer)("code") <> 0 Then
             RaiseEvent DebugOutput(a.Value(Of String)("message"))
         End If
+
+        RaiseEvent UserInfoChanged()
+
         Return a
     End Function
 
@@ -310,8 +318,10 @@ Public Class guazi
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
 
-        Debug.Print("Get award request succeeded, response returned value:")
-        Debug.Print(str)
+        Trace.TraceInformation("Get award request succeeded, response returned value:")
+        Trace.Indent()
+        Trace.TraceInformation(str)
+        Trace.Unindent()
 
         Dim a As JObject = JsonConvert.DeserializeObject(str)
         Dim statuscode As HttpStatusCode = req.HTTP_Response.StatusCode
@@ -336,8 +346,10 @@ Public Class guazi
         Dim rep As String = ReadToEnd(http_req.Stream)
         http_req.Close()
 
-        Debug.Print("Daily sign succeeded, response returned value:")
-        Debug.Print(rep)
+        Trace.TraceInformation("Daily sign succeeded, response returned value:")
+        Trace.Indent()
+        Trace.TraceInformation(rep)
+        Trace.Unindent()
 
         Dim ret As JObject = JsonConvert.DeserializeObject(rep)
         Dim sign_status As Integer = ret("data").Value(Of Integer)("status")
@@ -349,6 +361,8 @@ Public Class guazi
             Return JsonConvert.DeserializeObject(rep)
         End If
 
+        RaiseEvent UserInfoChanged()
+        RaiseEvent UserBaggageChanged()
         Return ret
     End Function
 
@@ -368,9 +382,12 @@ Public Class guazi
         Dim rep As String = ReadToEnd(http_req.Stream)
         http_req.Close()
 
-        Debug.Print("Get send gift succeeded, response returned value:")
-        Debug.Print(rep)
+        Trace.TraceInformation("Get send gift succeeded, response returned value:")
+        Trace.Indent()
+        Trace.TraceInformation(rep)
+        Trace.Unindent()
 
+        RaiseEvent UserBaggageChanged()
         Return JsonConvert.DeserializeObject(rep)
     End Function
 
@@ -387,8 +404,10 @@ Public Class guazi
         http_req.HttpGet(url)
         Dim rep As String = ReadToEnd(http_req.Stream)
 
-        Debug.Print("Get player bag succeeded, response returned value:")
-        Debug.Print(rep)
+        Trace.TraceInformation("Get player bag succeeded, response returned value:")
+        Trace.Indent()
+        Trace.TraceInformation(rep)
+        Trace.Unindent()
 
         http_req.Close()
 
@@ -419,6 +438,13 @@ Public Class guazi
         End If
     End Function
 
+    ''' <summary>
+    ''' 赠送道具
+    ''' </summary>
+    ''' <param name="giftid">道具id</param>
+    ''' <param name="bagid">道具在背包内的id</param>
+    ''' <param name="giftnum">数量</param>
+    ''' <returns></returns>
     Public Function SyncSendGift(ByVal giftid As Integer, ByVal bagid As Integer, ByVal giftnum As Integer) As Boolean
         If _RoomId <= 0 Then Return False
         Try
@@ -444,6 +470,11 @@ Public Class guazi
             Dim post_result As String = http_req.ReadResponseString
             http_req.Close()
 
+            Trace.TraceInformation("Sending gifts succeeded, response returned value:")
+            Trace.Indent()
+            Trace.TraceInformation(post_result)
+            Trace.Unindent()
+
             Dim post_result_ds As JObject = JsonConvert.DeserializeObject(post_result)
             Dim post_result_code As Integer = post_result_ds.Value(Of Integer)("code")
             If post_result_code = 0 Then
@@ -451,17 +482,22 @@ Public Class guazi
             Else
                 RaiseEvent DebugOutput("送出道具失败，返回数据:" & vbCrLf & post_result_ds.ToString)
             End If
+
+            RaiseEvent UserBaggageChanged()
+            RaiseEvent UserInfoChanged()
+
             Return True
         Catch ex As Exception
             RaiseEvent DebugOutput("[ERR]" & ex.ToString)
+            Trace.TraceError(ex.ToString)
             Return False
         End Try
     End Function
     'public functions
     ''' <summary>
-    ''' 构造函数，roomid之前是用来送投票券和道具的
+    ''' 构造函数，roomid之前是用来送道具的
     ''' </summary>
-    ''' <param name="roomid"></param>
+    ''' <param name="roomid">房间id(目前支持id和cid)</param>
     ''' <remarks></remarks>
     Public Sub New(Optional ByVal roomid As Integer = 0)
         _RoomURL = roomid
@@ -488,7 +524,7 @@ Public Class guazi
     End Sub
     '停止领取瓜子
     Public Sub AsyncEndGrabbingSilver()
-        If _workThd.ThreadState = ThreadState.Running Then
+        If _workThd.ThreadState = ThreadState.Running Or _workThd.ThreadState = ThreadState.WaitSleepJoin Then
             _workThd.Abort()
         End If
     End Sub
@@ -659,13 +695,13 @@ Public Class guazi
 
             If _CommentSocket IsNot Nothing AndAlso _CommentSocket.Connected = True Then
                 Try
-                    SendSocketHeartBeat()
+                    If Not _needNextRecv Then SendSocketHeartBeat()
                 Catch ex As Exception
-                    Debug.Print(ex.ToString)
+                    Trace.TraceError(ex.ToString)
                     RaiseEvent DebugOutput("[ERR]" & ex.ToString)
                 End Try
             End If
-        Loop
+        Loop While _CommentSocket IsNot Nothing
     End Sub
     Private Sub CommentThdCallback()
         If _RoomId <= 0 Then Return
@@ -673,30 +709,30 @@ Public Class guazi
         Dim ip_ed As IPEndPoint = New IPEndPoint(ipaddr, DEFAULT_COMMENT_PORT)
 
         _CommentSocket = New Sockets.Socket(Sockets.AddressFamily.InterNetwork, Sockets.SocketType.Stream, Sockets.ProtocolType.Tcp)
-        Dim buffer(1048575) As Byte
+        _tempCommentData = New Byte() {}
+
+        Dim buffer(65535) As Byte
         Dim length As Integer = 0
         Try
             _CommentSocket.Connect(ip_ed)
 
-            Debug.Print("Comment Socket: Sending User data")
+            Trace.TraceInformation("Comment Socket: Sending User data")
             RaiseEvent DebugOutput("开始接收 " & _RoomURL & " 房间的弹幕信息")
 
             Dim param As New JObject
             param.Add("roomid", _RoomId)
-            param.Add("uid", 100000000000000 + CLng((200000000000000 * Utils.rand.NextDouble())))
-
+            param.Add("uid", _RoomInfo("data").Value(Of ULong)("UID"))
 
             SendSocketData(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(param)))
             SendSocketHeartBeat()
             Do
                 length = _CommentSocket.Receive(buffer)
-                Debug.Print("Comment Socket: Received a socket data: length = " & length & "Byte")
                 If length <> 0 Then
                     Try
                         ParseSocketData(buffer, length)
                     Catch ex As Exception
                         RaiseEvent DebugOutput("[ERR]" & ex.ToString)
-                        Debug.Print(ex.ToString)
+                        Trace.TraceError(ex.ToString)
                     End Try
                 End If
 
@@ -706,8 +742,9 @@ Public Class guazi
 
         Catch ex As Exception
             RaiseEvent DebugOutput("[ERR]" & ex.ToString)
+            Trace.TraceError(ex.ToString)
         Finally
-            _CommentSocket.Disconnect(True)
+            If _CommentSocket.Connected Then _CommentSocket.Disconnect(True)
             _CommentSocket = Nothing
         End Try
     End Sub
@@ -738,7 +775,7 @@ Public Class guazi
     End Sub
     Private Sub SendSocketHeartBeat()
 
-        Debug.Print("Comment Socket: Sending Heartbeat data")
+        Trace.TraceInformation("Comment Socket: Sending Heartbeat data")
 
         Dim total_len As UInteger = 16
         Dim head_len As UShort = 16
@@ -766,17 +803,33 @@ Public Class guazi
     Public Event ReceivedComment(ByVal unixTimestamp As Long, ByVal username As String, ByVal msg As String)
     Public Event ReceivedGiftSent(ByVal unixTimestamp As Long, ByVal giftName As String, ByVal giftId As Integer, ByVal giftNum As Integer, ByVal user As String)
     Public Event ReceivedWelcome(ByVal admin As Boolean, ByVal vip As Boolean, ByVal name As String)
-    Public Event ReceivedSystemMsg(ByVal msg As String, ByVal refer_url As String)
-    Private Sub ParseSocketData(ByVal data() As Byte, ByVal length As Integer)
-        'todo: 兼容两条receive后合并处理的数据
+    Public Event ReceivedSystemMsg(ByVal msg As String, ByVal refer_url As String, ByVal roomid As UInteger)
 
+    Private _tempCommentData() As Byte
+    Private _needNextRecv As Boolean
+    Private Sub ParseSocketData(ByVal data() As Byte, ByVal length As Integer)
         '3: online people
         '5: msg
         Dim ms As New MemoryStream
         ms.Write(data, 0, length)
         ms.Position = 0
 
+        Trace.TraceInformation("Comment Socket: Received a data of " & length & " bytes")
+
         While ms.Position < ms.Length
+
+            '读取回上次的数据
+            If _needNextRecv Then
+                Dim buf(ms.Length - 1) As Byte
+                ms.Position = 0
+                ms.Read(buf, 0, ms.Length)
+
+                ms.Position = 0
+                ms.Write(_tempCommentData, 0, _tempCommentData.Length)
+                ms.Write(buf, 0, buf.Length)
+                ms.Position = 0
+            End If
+
             Dim total_len As UInteger = ReadUI32(ms)
             Dim head_len As UShort = ReadUI16(ms)
             If head_len = 0 Then
@@ -786,26 +839,48 @@ Public Class guazi
             Dim version As UShort = ReadUI16(ms)
             Dim type As UInteger = ReadUI32(ms)
             Dim param5 As UInteger = ReadUI32(ms)
+            Trace.TraceInformation("Parsing Socket data: [TotalLength: " & total_len & ", HeadLength: " & head_len & ", version: " & version & ", type: " & type & ", additional param: " & param5 & "]")
 
             Select Case type
                 Case 3
-                    RaiseEvent ReceivedOnlinePeople(ReadUI32(ms))
+                    Dim onlineUser As UInteger = ReadUI32(ms)
+                    Trace.TraceInformation("Parsing uint32:" & onlineUser)
+                    RaiseEvent ReceivedOnlinePeople(onlineUser)
 
                 Case 5
                     Dim buf(total_len - head_len - 1) As Byte
                     ms.Read(buf, 0, total_len - head_len)
                     Dim str As String = Encoding.UTF8.GetString(buf)
 
-                    Debug.Print("Parsing socket data:" & str)
+                    '判断是否需要分开读取
+                    '标识符为最后一字节是否为}
+                    If str.EndsWith("}") Then
+                        _needNextRecv = False
+                        _tempCommentData = New Byte() {}
+                    Else
+                        _needNextRecv = True
+                        '不是的话将本次所有数据存入临时变量中，下次执行该函数再统一解析
+                        ms.Position = 0
+                        Dim origin_tempcomment_length As Integer = _tempCommentData.Length
+                        Array.Resize(_tempCommentData, _tempCommentData.Length + length)
+                        'Array.Copy(buf, 0, _tempCommentData, _tempCommentData.Length, buf.Length)
+                        ms.Read(_tempCommentData, origin_tempcomment_length, length)
+                        ms.Close()
+                        Return
+                    End If
+
+                    Trace.TraceInformation("Parsing string:" & str)
+
                     Dim str_obj As JObject = Nothing
                     Try
                         str_obj = JsonConvert.DeserializeObject(str)
                     Catch ex As Exception
-                        Debug.Print("An error occured while deserializing json data:")
-                        Debug.Print("[TRACE] Origin String: " & str)
-                        Debug.Print("[TRACE] Exception Type: " & ex.ToString)
-                        Continue While
+                        Trace.TraceWarning("An error occured while deserializing json data:")
+                        Trace.TraceInformation("[TRACE] Origin String: " & str & vbCrLf)
+                        Trace.TraceInformation("[TRACE] Exception Type: " & ex.ToString)
+                        Exit Sub
                     End Try
+
 
                     Select Case str_obj.Value(Of String)("cmd")
 
@@ -829,9 +904,9 @@ Public Class guazi
                             '   [
                             '       用户id,
                             '       用户名称,
-                            '       (?) ,
+                            '       是否房管 ,
                             '       是否老爷,
-                            '       (?) ,
+                            '       是否月费老爷 ,
                             '       用户权限(默认为10000)
                             '   ], [ （此处可无）
                             '       勋章等级,
@@ -910,16 +985,18 @@ Public Class guazi
 #End Region
                             Dim msg As String = str_obj.Value(Of String)("msg")
                             Dim url As String = str_obj.Value(Of String)("url")
-                            RaiseEvent ReceivedSystemMsg(msg, url)
+                            Dim roomid As UInteger = str_obj.Value(Of UInteger)("roomid")
+                            RaiseEvent ReceivedSystemMsg(msg, url, roomid)
                         Case "SYS_GIFT"
 
 #Region "Example and remark"
                             '{"cmd":"SYS_GIFT","msg":"\u6263\u5b50\u6316:? \u5728\u5e05\u70b8\u4e4c\u51ac\u7684:?\u76f4\u64ad\u95f4138:?\u5185\u8d60\u9001:?36:?\u5171100\u4e2a\uff0c\u89e6\u53d11\u6b21\u5228\u51b0\u96e8\u62bd\u5956\uff0c\u5feb\u53bb\u524d\u5f80\u62bd\u5
-                            ' 可能是官方的漏洞？显示不全？
+                            ' 注意这只是部分，还有一部分在下一次receive中返回
 #End Region
                             Dim msg As String = str_obj.Value(Of String)("msg")
                             Dim url As String = str_obj.Value(Of String)("url")
-                            RaiseEvent ReceivedSystemMsg(msg, url)
+                            Dim roomid As UInteger = str_obj.Value(Of UInteger)("roomid")
+                            RaiseEvent ReceivedSystemMsg(msg, url, roomid)
 
                         Case Else
 
@@ -948,6 +1025,7 @@ Public Class guazi
     Public Sub AsyncStopReceiveComment()
         If _CommentThd IsNot Nothing AndAlso _CommentThd.ThreadState = ThreadState.Running Then
             _isReceivingComment = False
+            _CommentSocket.Close()
             _CommentThd.Abort()
             _CommentHeartBeat.Abort()
         End If
@@ -957,17 +1035,28 @@ Public Class guazi
     Private _liveOnThd As Thread
     Private Sub liveOnThdCallback()
         Dim req As New NetStream
+        If _RoomId <= 0 Then Return
         Dim url As String = "http://live.bilibili.com/User/userOnlineHeart"
         Do
             Try
                 Dim next_time As Date = Now.AddMinutes(5)
                 RaiseEvent NextOnlineHeartBeatTime(next_time)
 
-                req.HttpPost(url, New Byte() {}, "text/plain")
+                Dim httpHeader As New Parameters
+                httpHeader.Add("Origin", "http://live.bilibili.com/")
+                httpHeader.Add("X-Requested-With", "XMLHttpRequest")
+                httpHeader.Add("Referer", "http://live.bilibili.com/" & _RoomId)
+
+                req.HttpPost(url, New Byte() {}, "text/plain", httpHeader)
 
                 Dim str As String = req.ReadResponseString
-                Debug.Print("Sending Online Heartbeat succeeded, response returned value:")
-                Debug.Print(str)
+
+                Trace.TraceInformation("Sending Online Heartbeat succeeded, response returned value:")
+                Trace.Indent()
+                Trace.TraceInformation(str)
+                Trace.Unindent()
+
+                RaiseEvent UserInfoChanged()
 
                 req.Close()
                 Dim sleep_time As TimeSpan = next_time - Now
@@ -975,7 +1064,7 @@ Public Class guazi
             Catch ex2 As ThreadAbortException
                 Exit Do
             Catch ex As Exception
-                Debug.Print(ex.ToString)
+                Trace.TraceError(ex.ToString)
             End Try
         Loop
     End Sub
@@ -998,28 +1087,59 @@ Public Class guazi
     'b站限时活动 目前是领取什么扇的活动，所以在活动结束后不要调用 :-D
     Private _timeLimitEventThd As Thread
     Private Sub EventThdCallback()
-
+        If _RoomId <= 0 Then Return
         Dim req As New NetStream
         Dim url As String = "http://live.bilibili.com/summer/heart"
+        Try
+            Dim preload_url As String = "http://live.bilibili.com/summer/getSummerRoom?ruid=" & _RoomInfo("data").Value(Of Integer)("MASTERID")
+            req.HttpGet(preload_url)
+            Dim preload_str As String = req.ReadResponseString
+            req.Close()
+
+            Trace.TraceInformation("Get Summer Special Event succeeded, response returned value:")
+            Trace.Indent()
+            Trace.TraceInformation(preload_str)
+            Trace.Unindent()
+        Catch ex As Exception
+            Trace.TraceError(ex.ToString)
+            Return
+        End Try
+
         Do
             Try
                 Dim next_time As Date = Now.AddMinutes(5)
-                RaiseEvent NextEventGrabTime(next_time)
 
-                req.HttpPost(url, New Byte() {}, "text/html")
+                Dim httpHeader As New Parameters
+                httpHeader.Add("X-Requested-With", "XMLHttpRequest")
+                httpHeader.Add("Referer", "http://live.bilibili.com/" & _RoomURL)
+                httpHeader.Add("Origin", "http://live.bilibili.com")
+                req.HttpPost(url, New Byte() {}, "text/html", httpHeader)
                 Dim ret_str As String = req.ReadResponseString
 
-                Debug.Print("Sending Special Event Heartbeat succeeded, response returned value:")
-                Debug.Print(ret_str)
+                Trace.TraceInformation("Sending Special Event Heartbeat succeeded, response returned value:")
+                Trace.Indent()
+                Trace.TraceInformation(ret_str)
+                Trace.Unindent()
 
                 req.Close()
+
+                RaiseEvent UserBaggageChanged()
+
+                Dim json As JObject = JsonConvert.DeserializeObject(ret_str)
+                Dim continueGet As Boolean = json("data").Value(Of Boolean)("summerHeart")
+
+                If Not continueGet Then
+                    RaiseEvent DebugOutput("本日团扇已领完")
+                    Return
+                End If
+                RaiseEvent NextEventGrabTime(next_time)
 
                 Dim sleep_time As TimeSpan = next_time - Now
                 If sleep_time.TotalMilliseconds > 0 Then Thread.Sleep(sleep_time)
             Catch ex2 As ThreadAbortException
                 Exit Do
             Catch ex As Exception
-                Debug.Print(ex.ToString)
+                Trace.TraceError(ex.ToString)
             End Try
         Loop
     End Sub
@@ -1051,8 +1171,10 @@ Public Class guazi
         Dim str As String = netstr.ReadResponseString
         netstr.Close()
 
-        Debug.Print("Get User Info succeeded, response returned value:")
-        Debug.Print(str)
+        Trace.TraceInformation("Get User Info succeeded, response returned value:")
+        Trace.Indent()
+        Trace.TraceInformation(str)
+        Trace.Unindent()
 
         Return JsonConvert.DeserializeObject(str)
     End Function
@@ -1075,13 +1197,256 @@ Public Class guazi
             req.HttpPost("http://live.bilibili.com/msg/send", req_param)
             Dim rep As String = req.ReadResponseString
 
-            Debug.Print("Send comment succeeded, response returned value:")
-            Debug.Print(rep)
-
+            Trace.TraceInformation("Send comment succeeded, response returned value:")
+            Trace.Indent()
+            Trace.TraceInformation(rep)
+            Trace.Unindent()
         Catch ex As Exception
-            Debug.Print(ex.ToString)
+            Trace.TraceError(ex.ToString)
         End Try
         req.Close()
+    End Sub
+
+    Public Event UserInfoChanged()
+    Public Event UserBaggageChanged()
+
+    Private _ActThd As Thread
+    Private _is_listening_act As Boolean
+    Private Structure _ActData
+        Implements IComparable
+        Implements IEqualityComparer
+        Public roomid As Integer
+        Public raffleId As Integer
+        Public expireTime As Date
+        Public actType As _ActType
+
+        Public Function CompareTo(obj As Object) As Integer Implements IComparable.CompareTo
+            Return expireTime.CompareTo(CType(obj, _ActData).expireTime)
+        End Function
+        Public Shared Operator =(a As _ActData, b As _ActData)
+            Dim valid As Boolean = True
+            If a.roomid <> b.roomid Then valid = False
+            If a.raffleId <> b.raffleId Then valid = False
+            If Math.Abs((a.expireTime - b.expireTime).TotalSeconds) > 1 Then valid = False
+            If a.actType <> b.actType Then valid = False
+            Return valid
+        End Operator
+        Public Shared Operator <>(a As _ActData, b As _ActData)
+            Return (Not a = b)
+        End Operator
+
+        Private Function IEqualityComparer_Equals(x As Object, y As Object) As Boolean Implements IEqualityComparer.Equals
+            Return (CType(x, _ActData) = CType(y, _ActData))
+        End Function
+#Disable Warning BC40005
+        Public Function GetHashCode(obj As Object) As Integer Implements IEqualityComparer.GetHashCode
+            Return roomid.GetHashCode Xor raffleId.GetHashCode Xor expireTime.GetHashCode Xor actType.GetHashCode
+        End Function
+#Enable Warning BC40005
+    End Structure
+    Private Enum _ActType
+        TYPE_SmallTV
+        TYPE_Ice
+    End Enum
+    Private _lsActData As List(Of _ActData)
+    Private _lsActDataLck As New Object
+    Private _ActThdSleeping As Boolean
+    Private Sub listActThdCallback()
+        Dim ls_count As Integer
+        Dim req As New NetStream
+        req.ReadWriteTimeout = 5000
+        req.Timeout = 5000
+        req.RetryDelay = 300
+        req.RetryTimes = 10
+
+        Do
+
+            SyncLock _lsActDataLck
+                ls_count = _lsActData.Count
+            End SyncLock
+
+            If ls_count = 0 Then
+                Try
+                    _ActThdSleeping = True
+                    Thread.Sleep(Timeout.Infinite)
+                Catch ex As Exception
+                    'Trace.TraceError(ex.ToString)
+                End Try
+                _ActThdSleeping = False
+                Continue Do
+            End If
+
+            '排序并返回首个元素
+            Dim first_element As _ActData
+            SyncLock _lsActDataLck
+                _lsActData.Sort()
+                first_element = _lsActData.First()
+                _lsActData.RemoveAt(0)
+            End SyncLock
+
+
+            Dim sleep_time As TimeSpan = first_element.expireTime - Now
+            If sleep_time.Ticks > 0 Then
+                Thread.Sleep(sleep_time)
+            End If
+
+            '到时间领取
+            Select Case first_element.actType
+                Case _ActType.TYPE_Ice
+                    req.HttpGet("http://live.bilibili.com/summer/notice?roomid=" & first_element.roomid & "&raffleId=" & first_element.raffleId)
+
+                    Dim str As String = req.ReadResponseString
+
+                    Trace.TraceInformation("Getting Ice Activity award:")
+                    Trace.TraceInformation("    " & str)
+
+                    req.Close()
+                    Dim json As JObject = JsonConvert.DeserializeObject(str)
+
+                    RaiseEvent DebugOutput("刨冰抽奖结果:" & json.Value(Of String)("msg"))
+                    RaiseEvent UserBaggageChanged()
+                Case _ActType.TYPE_SmallTV
+                    'todo: 抓包兼容
+
+                    req.HttpGet("http://live.bilibili.com/SmallTV/getReward?id=" & first_element.raffleId)
+
+                    Dim str As String = req.ReadResponseString
+                    req.Close()
+
+                    Trace.TraceInformation("Getting Small TV Activity award:")
+                    Trace.TraceInformation("    " & str)
+
+                    Dim json As JObject = JsonConvert.DeserializeObject(str)
+                    RaiseEvent DebugOutput("小电视抽奖结果: 获得" & json("data")("reward").Value(Of Integer)("num") & "个道具")
+
+                    RaiseEvent UserBaggageChanged()
+            End Select
+        Loop
+    End Sub
+    Private Sub onSysMsgRecv(ByVal msg As String, ByVal url As String, ByVal roomid As UInteger) Handles Me.ReceivedSystemMsg
+        If Not _is_listening_act Then Return
+        If InStr(msg, "抽奖") <= 0 Then Return
+        If _RoomId <= 0 Then Return
+
+        '另外启动线程参加抽奖活动
+        ThreadPool.QueueUserWorkItem(
+            Sub()
+                Try
+                    Dim req As New NetStream
+                    req.ReadWriteTimeout = 5000
+                    req.Timeout = 5000
+                    req.RetryDelay = 300
+                    req.RetryTimes = 10
+
+                    Dim headerParam As New Parameters
+                    headerParam.Add("Referer", "http://live.bilibili.com/" & _RoomURL)
+                    headerParam.Add("X-Requested-With", "XMLHttpRequest")
+
+                    '手动延迟
+                    Thread.Sleep(2000)
+
+                    If InStr(msg, "小电视") Then
+                        req.HttpGet("http://live.bilibili.com/SmallTV/index?roomid=" & roomid & "_=" & Int(ToUnixTimestamp(Now) * 1000))
+                        Dim str As String = req.ReadResponseString
+
+                        Trace.TraceInformation("Checking SmallTV Activities succeeded:")
+                        Trace.TraceInformation("    " & str)
+                        req.Close()
+                        Dim json As JObject = JsonConvert.DeserializeObject(str)
+                        Dim act_data As JArray = json("data").Value(Of JArray)("unjoin")
+
+                        For Each element As JObject In act_data
+                            Dim data As New _ActData
+                            data.actType = _ActType.TYPE_SmallTV
+                            data.expireTime = Now.AddSeconds(element.Value(Of Integer)("dtime")).AddSeconds(30)
+                            data.raffleId = element.Value(Of Integer)("id")
+                            data.roomid = roomid
+
+                            req.HttpGet("http://live.bilibili.com/SmallTV/join?roomid=" & roomid & "&_=" & Int(ToUnixTimestamp(Now) * 1000) & "&id=" & data.raffleId)
+
+                            RaiseEvent DebugOutput("已参加 " & roomid & " 房间的小电视抽奖活动")
+
+                            Trace.TraceInformation("Joining Small TV Act succeeded:")
+                            Trace.TraceInformation("    " & req.ReadResponseString)
+
+                            SyncLock _lsActDataLck
+                                _lsActData.Add(data)
+                            End SyncLock
+                        Next
+
+                    ElseIf InStr(msg, "刨冰雨") Then
+                        req.HttpGet("http://live.bilibili.com/summer/check?roomid=" & roomid, headerParam)
+                        Dim str As String = req.ReadResponseString
+
+                        Trace.TraceInformation("Checking Ice Activities succeeded:")
+                        Trace.TraceInformation("    " & str)
+
+                        req.Close()
+                        Dim json As JObject = JsonConvert.DeserializeObject(str)
+                        Dim act_data As JArray = json.Value(Of JArray)("data")
+
+                        For Each element As JObject In act_data
+                            Dim data As New _ActData
+                            data.actType = _ActType.TYPE_Ice
+                            data.expireTime = Now.AddSeconds(element.Value(Of Integer)("time")).AddSeconds(60)
+                            data.raffleId = element.Value(Of Integer)("raffleId")
+                            data.roomid = roomid
+
+                            Dim has_data As Boolean
+                            SyncLock _lsActDataLck
+                                has_data = _lsActData.Contains(data)
+                            End SyncLock
+
+                            If Not has_data Then
+                                req.HttpGet("http://live.bilibili.com/summer/join?roomid=" & data.roomid & "&raffleId=" & data.raffleId, headerParam)
+
+                                RaiseEvent DebugOutput("已参加 " & roomid & " 房间的刨冰抽奖活动")
+
+                                Trace.TraceInformation("Joining Ice Activity succeeded:")
+                                Trace.TraceInformation("    " & req.ReadResponseString)
+
+                                req.Close()
+
+                                SyncLock _lsActDataLck
+                                    _lsActData.Add(data)
+                                End SyncLock
+                            End If
+                        Next
+                    Else
+                        Return
+                    End If
+
+                Catch ex As Exception
+                    Trace.TraceError(ex.ToString)
+                Finally
+                    If _ActThdSleeping Then _ActThd.Interrupt()
+                End Try
+            End Sub)
+    End Sub
+    '参加抽奖活动
+    Public Sub AsyncListenAct()
+        If Not _isReceivingComment Then
+            'RaiseEvent DebugOutput("[ERR]需要先开启弹幕监听才能使用本功能")
+            AsyncStartReceiveComment()
+        End If
+
+        _lsActData = New List(Of _ActData)
+        _is_listening_act = True
+
+        If _ActThd Is Nothing OrElse (_ActThd.ThreadState = ThreadState.Stopped Or _ActThd.ThreadState = ThreadState.Aborted) Then
+            _ActThd = New Thread(AddressOf listActThdCallback)
+            _ActThd.Name = "Bili Activity Joining Thread"
+        End If
+
+        If _ActThd.ThreadState = ThreadState.Unstarted Then
+            _ActThd.Start()
+        End If
+    End Sub
+    Public Sub AsyncStopListeningAct()
+        _ActThdSleeping = False
+        _is_listening_act = False
+        If _ActThd Is Nothing Then Return
+        _ActThd.Abort()
     End Sub
 End Class
 ''' <summary>
