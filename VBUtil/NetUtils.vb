@@ -455,6 +455,7 @@ Namespace Utils
                         End If
                         '创建http request
                         HTTP_Request = System.Net.HttpWebRequest.Create(postUrl)
+                        HTTP_Request.KeepAlive = True
 
                         '将headerParam中的参数添加到web request中
                         If headerParam IsNot Nothing Then
@@ -514,11 +515,12 @@ Namespace Utils
                         End If
                         '追加默认参数
                         Dim keyList As List(Of String) = HTTP_Request.Headers.AllKeys.ToList
-                        If Not keyList.Contains(STR_ACCEPT) Then HTTP_Request.Accept = DEFAULT_ACCEPT
-                        If Not keyList.Contains(STR_ACCEPT_ENCODING) Then HTTP_Request.Headers.Add(STR_ACCEPT_ENCODING, DEFAULT_ACCEPT_ENCODING)
-                        If Not keyList.Contains(STR_ACCEPT_LANGUAGE) Then HTTP_Request.Headers.Add(STR_ACCEPT_LANGUAGE, DEFAULT_ACCEPT_LANGUAGE)
+                        If Not keyList.Contains(STR_ACCEPT) Then HTTP_Request.Accept = Accept
+                        If Not keyList.Contains(STR_ACCEPT_ENCODING) Then HTTP_Request.Headers.Add(STR_ACCEPT_ENCODING, AcceptEncoding)
+                        If Not keyList.Contains(STR_ACCEPT_LANGUAGE) Then HTTP_Request.Headers.Add(STR_ACCEPT_LANGUAGE, AcceptLanguage)
                         If Not keyList.Contains(STR_DATE) Then HTTP_Request.Date = Now
-                        If Not keyList.Contains(STR_USER_AGENT) Then HTTP_Request.UserAgent = DEFAULT_USER_AGENT
+                        If Not keyList.Contains(STR_USER_AGENT) Then HTTP_Request.UserAgent = UserAgent
+                        'If Not keyList.Contains(STR_CONNECTION) Then HTTP_Request.Connection = ""
 
                         'proxy
                         If Proxy IsNot Nothing Then HTTP_Request.Proxy = Proxy
@@ -628,11 +630,11 @@ Namespace Utils
                         End If
                         '追加默认参数
                         Dim keyList As List(Of String) = HTTP_Request.Headers.AllKeys.ToList
-                        If Not keyList.Contains(STR_ACCEPT) Then HTTP_Request.Accept = DEFAULT_ACCEPT
-                        If Not keyList.Contains(STR_ACCEPT_ENCODING) Then HTTP_Request.Headers.Add(STR_ACCEPT_ENCODING, DEFAULT_ACCEPT_ENCODING)
-                        If Not keyList.Contains(STR_ACCEPT_LANGUAGE) Then HTTP_Request.Headers.Add(STR_ACCEPT_LANGUAGE, DEFAULT_ACCEPT_LANGUAGE)
+                        If Not keyList.Contains(STR_ACCEPT) Then HTTP_Request.Accept = Accept
+                        If Not keyList.Contains(STR_ACCEPT_ENCODING) Then HTTP_Request.Headers.Add(STR_ACCEPT_ENCODING, AcceptEncoding)
+                        If Not keyList.Contains(STR_ACCEPT_LANGUAGE) Then HTTP_Request.Headers.Add(STR_ACCEPT_LANGUAGE, AcceptLanguage)
                         If Not keyList.Contains(STR_DATE) Then HTTP_Request.Date = Now
-                        If Not keyList.Contains(STR_USER_AGENT) Then HTTP_Request.UserAgent = DEFAULT_USER_AGENT
+                        If Not keyList.Contains(STR_USER_AGENT) Then HTTP_Request.UserAgent = UserAgent
 
                         'proxy
                         If Proxy IsNot Nothing Then HTTP_Request.Proxy = Proxy

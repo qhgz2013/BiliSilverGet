@@ -486,6 +486,16 @@
                 _minYMarkDistance = value
             End Set
         End Property
+        Public ReadOnly Property MaxValue() As PointD
+            Get
+                Return _maxValue
+            End Get
+        End Property
+        Public ReadOnly Property MinValue() As PointD
+            Get
+                Return _minValue
+            End Get
+        End Property
 #End Region
         Public Structure PointD
             Public X, Y As Double

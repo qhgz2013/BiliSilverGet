@@ -74,8 +74,6 @@ Partial Class Form1
         Me.Timer3 = New System.Windows.Forms.Timer(Me.components)
         Me.GroupBox4 = New System.Windows.Forms.GroupBox()
         Me.RefreshUserInfo = New System.Windows.Forms.Button()
-        Me.Label10 = New System.Windows.Forms.Label()
-        Me.lblRank = New System.Windows.Forms.Label()
         Me.Label13 = New System.Windows.Forms.Label()
         Me.lblLv = New System.Windows.Forms.Label()
         Me.lblVip = New System.Windows.Forms.Label()
@@ -525,8 +523,6 @@ Partial Class Form1
         'GroupBox4
         '
         Me.GroupBox4.Controls.Add(Me.RefreshUserInfo)
-        Me.GroupBox4.Controls.Add(Me.Label10)
-        Me.GroupBox4.Controls.Add(Me.lblRank)
         Me.GroupBox4.Controls.Add(Me.Label13)
         Me.GroupBox4.Controls.Add(Me.lblLv)
         Me.GroupBox4.Controls.Add(Me.lblVip)
@@ -554,23 +550,6 @@ Partial Class Form1
         Me.RefreshUserInfo.TabIndex = 0
         Me.RefreshUserInfo.Text = "刷新用户信息"
         Me.RefreshUserInfo.UseVisualStyleBackColor = True
-        '
-        'Label10
-        '
-        Me.Label10.AutoSize = True
-        Me.Label10.Location = New System.Drawing.Point(277, 61)
-        Me.Label10.Name = "Label10"
-        Me.Label10.Size = New System.Drawing.Size(41, 12)
-        Me.Label10.TabIndex = 20
-        Me.Label10.Text = "排名："
-        '
-        'lblRank
-        '
-        Me.lblRank.AutoSize = True
-        Me.lblRank.Location = New System.Drawing.Point(324, 61)
-        Me.lblRank.Name = "lblRank"
-        Me.lblRank.Size = New System.Drawing.Size(0, 12)
-        Me.lblRank.TabIndex = 20
         '
         'Label13
         '
@@ -794,8 +773,6 @@ Partial Class Form1
     Friend WithEvents lblUname As Label
     Friend WithEvents Label6 As Label
     Friend WithEvents RefreshUserInfo As Button
-    Friend WithEvents Label10 As Label
-    Friend WithEvents lblRank As Label
     Friend WithEvents lblLv As Label
     Friend WithEvents lblVip As Label
     Friend WithEvents lblUserExp As Label

@@ -22,8 +22,23 @@ Public Class Form1
         End If
         ListView1.Items.Add(Now.ToLongTimeString)
         ListView1.Items(ListView1.Items.Count - 1).SubItems.Add(s)
-        ListView1.SelectedItems.Clear()
-        ListView1.Items(ListView1.Items.Count - 1).Selected = True
+
+        '修改滚动的条件，不然慌得眼瞎
+        If ListView1.SelectedItems.Count > 0 Then
+            Dim sel_item As ListViewItem = ListView1.SelectedItems(0)
+            Dim index As Integer = ListView1.Items.IndexOf(sel_item)
+
+            If index + 2 = ListView1.Items.Count Then
+                '在选择最后一个时开启滚动
+                ListView1.SelectedItems.Clear()
+                ListView1.Items(ListView1.Items.Count - 1).Selected = True
+            End If
+        Else
+            '或者在无选择时开启
+            ListView1.SelectedItems.Clear()
+            ListView1.Items(ListView1.Items.Count - 1).Selected = True
+        End If
+
     End Sub
     Private Sub ClearDebugOutput()
         TextBox1.Text = ""
@@ -161,10 +176,8 @@ Public Class Form1
         gz = New guazi()
         _initflag = True
 
-        If AutoStart.Checked Then
-            gz.RoomURL = bRoomId.Text
-            goFuck(sender, e)
-        End If
+        gz.RoomURL = bRoomId.Text
+        goFuck(sender, e)
 
         '弹幕颜色
         commentColorOutput.BackColor = commentColor.Color
@@ -215,9 +228,13 @@ Public Class Form1
                 Dim roomid As Integer
                 If Integer.TryParse(bRoomId.Text, roomid) Then
                     If roomid > 0 Then
-                        gz.RoomURL = roomid
-                        goFuck(sender, e)
-                        SaveGuaziConfig()
+                        Try
+                            gz.RoomURL = roomid
+                            goFuck(sender, e)
+                            SaveGuaziConfig()
+                        Catch ex As Exception
+                            MessageBox.Show("出错啦，重试一下吧:-)")
+                        End Try
                     Else
                         MessageBox.Show(RandomText(New String() {
                             "你坑我！这根本不能当房间号……", "你随便编个数字好歹也要合理合法有依据吧", "房间号错误：小于等于0", "这……这房间号有毒！根本不可能进的啊"
@@ -559,7 +576,7 @@ Public Class Form1
                 Dim nextlv As Integer = json.Value(Of Integer)("user_next_level")
                 Dim curexp As ULong = json.Value(Of ULong)("user_intimacy")
                 Dim nextexp As ULong = json.Value(Of ULong)("user_next_intimacy")
-                Dim rank As UInteger = json.Value(Of UInteger)("user_level_rank")
+                'Dim rank As UInteger = json.Value(Of UInteger)("user_level_rank") '已移除，理由很简单：不充钱玩你【哔——】
                 Dim silver As UInteger = json.Value(Of UInteger)("silver")
                 Dim gold As UInteger = json.Value(Of UInteger)("gold")
                 Dim vip As Integer = ((json.Value(Of Integer)("svip") And 1) << 1) Or (json.Value(Of Integer)("vip") And 1)
@@ -568,7 +585,7 @@ Public Class Form1
                 Me.Invoke(
                     Sub()
                         lblUserExp.Text = curexp & "/" & nextexp
-                        lblRank.Text = rank
+                        'lblRank.Text = rank
                         lblSilver.Text = silver
                         lblGold.Text = gold
                         lblVip.Text = If(vip And 2, "你是土豪老爷", If(vip And 1, "你是老爷", ""))
