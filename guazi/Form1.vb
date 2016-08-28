@@ -394,6 +394,15 @@ Public Class Form1
     Private Sub OnReceivingSystemMsg(ByVal msg As String, ByVal refer_url As String, ByVal roomid As UInteger) Handles gz.ReceivedSystemMsg
         DebugOutput("收到系统消息:" & msg)
     End Sub
+    Private Sub OnReceivingLiveStart() Handles gz.StatusLive
+        DebugOutput("<直播间消息:直播已开始>")
+    End Sub
+    Private Sub OnReceivingLiveStop() Handles gz.StatusPreparing
+        DebugOutput("<直播间消息:直播已结束>")
+    End Sub
+    Private Sub OnReceivingBlockMsg(ByVal uid As Integer, ByVal uname As String) Handles gz.RoomBlockMsg
+        DebugOutput("<直播间消息:已屏蔽用户 " & uname & " 的弹幕>")
+    End Sub
 #End Region
 #Region "脚本1 - 道具栏模块"
     Private _item_list As JArray = Nothing

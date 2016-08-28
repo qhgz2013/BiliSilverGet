@@ -442,9 +442,9 @@ Public Class HTTP_Stream_Manager
         If toStatus = StreamStatus.STATUS_STOP Then
             SyncLock _syncLock
                 If fromStatus = StreamStatus.STATUS_WORK Then
-                    If _stream_list(name).IsDownloadThread Then
+                    'If _stream_list(name).IsDownloadThread Then
 
-                        _current_download_thread -= 1
+                    _current_download_thread -= 1
                         _stream_list.Remove(name)
                         'auto start new tasks
                         For Each e In _stream_list
@@ -457,20 +457,20 @@ Public Class HTTP_Stream_Manager
                             End If
                         Next
 
-                    Else
-                        _current_upload_thread -= 1
-                        _stream_list.Remove(name)
-                        'auto start new tasks
-                        For Each e In _stream_list
-                            If _current_upload_thread >= DEFAULT_MAX_UPLOAD_THREAD Then
-                                Exit For
-                            End If
-                            If e.Value.Status = StreamStatus.STATUS_IDLE Then
-                                _current_upload_thread += 1
-                                e.Value.Start()
-                            End If
-                        Next
-                    End If
+                    'Else
+                    '_current_upload_thread -= 1
+                    '_stream_list.Remove(name)
+                    'auto start new tasks
+                    'For Each e In _stream_list
+                    'If _current_upload_thread >= DEFAULT_MAX_UPLOAD_THREAD Then
+                    'Exit For
+                    'End If
+                    'If e.Value.Status = StreamStatus.STATUS_IDLE Then
+                    '_current_upload_thread += 1
+                    'e.Value.Start()
+                    'End If
+                    'Next
+                    'End If
                 End If
             End SyncLock
         End If
