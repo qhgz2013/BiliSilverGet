@@ -688,7 +688,7 @@ Public Class guazi
                     If Not _needNextRecv Then
                         _sckrwLck.AcquireWriterLock(Timeout.Infinite)
                         Try
-                            SendSocketHeartBeat()
+                            SendSocketHeartBeat(_CommentSocket)
                         Catch ex As Exception
                             Throw ex
                         Finally
@@ -715,15 +715,15 @@ Public Class guazi
         Try
             _CommentSocket.Connect(ip_ed)
 
-            Trace.TraceInformation("Comment Socket: Sending User data")
+            Trace.TraceInformation("Socket: Sending User data")
             RaiseEvent DebugOutput("开始接收 " & _RoomURL & " 房间的弹幕信息")
 
             Dim param As New JObject
             param.Add("roomid", _RoomId)
             param.Add("uid", _RoomInfo("data").Value(Of ULong)("UID"))
 
-            SendSocketData(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(param)))
-            SendSocketHeartBeat()
+            SendSocketData(_CommentSocket, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(param)))
+            SendSocketHeartBeat(_CommentSocket)
             Do
                 length = _CommentSocket.Receive(buffer)
                 If length <> 0 Then
@@ -753,7 +753,7 @@ Public Class guazi
             _CommentSocket = Nothing
         End Try
     End Sub
-    Private Sub SendSocketData(ByVal data() As Byte)
+    Private Sub SendSocketData(ByVal sck As Socket, ByVal data() As Byte)
         '套接字 v1.0
         Dim data_length As UInteger = 0
         If data IsNot Nothing Then data_length = data.Length
@@ -773,14 +773,14 @@ Public Class guazi
         buf.Position = 0
         Dim post_data(total_len - 1) As Byte
         buf.Read(post_data, 0, total_len)
-        If _CommentSocket IsNot Nothing Then
-            _CommentSocket.Send(post_data)
+        If sck IsNot Nothing Then
+            sck.Send(post_data)
         End If
         buf.Close()
     End Sub
-    Private Sub SendSocketHeartBeat()
+    Private Sub SendSocketHeartBeat(ByVal sck As Socket)
 
-        Trace.TraceInformation("Comment Socket: Sending Heartbeat data")
+        Trace.TraceInformation("Socket: Sending Heartbeat data")
 
         Dim total_len As UInteger = 16
         Dim head_len As UShort = 16
@@ -798,8 +798,8 @@ Public Class guazi
         buf.Position = 0
         Dim post_data(15) As Byte
         buf.Read(post_data, 0, 16)
-        If _CommentSocket IsNot Nothing Then
-            _CommentSocket.Send(post_data)
+        If sck IsNot Nothing Then
+            sck.Send(post_data)
         End If
         buf.Close()
 
@@ -813,6 +813,37 @@ Public Class guazi
     Public Event StatusLive()
     Public Event RoomInfoChanged()
     Public Event RoomBlockMsg(ByVal uid As Integer, ByVal uname As String)
+    Public Event BetStarted()
+    Public Event BetEnding()
+    Public Event BetEnded()
+    Public Event BetSealed()
+    Public Event SpecialGiftStarted(ByVal roomid As UInteger, ByVal content As String, ByVal id As Integer, ByVal num As Integer, ByVal time As Integer, ByVal joined As Boolean)
+    Public Event SpecialGiftEnded(ByVal roomid As UInteger)
+
+    Public Structure BetStatus
+        Public question As String
+        Public answer() As String
+        Public isInBet As Boolean
+        Public isBet As Boolean
+        Public id As UInteger
+        Public uid As UInteger
+        Public updateTime As String
+        Public Structure AnswerData
+            Public id As UInteger
+            Public uid As UInteger
+            Public betId As UInteger
+            Public coin As UInteger
+            Public coin_type As String
+            Public times As Single
+            Public amountCanBuy As UInteger
+            Public amountTotal As UInteger
+            Public amountCurrent As UInteger
+            Public progress As UInteger
+            Public referIndex As Integer '指向该竞猜数据的答案下标
+        End Structure
+        Public data() As AnswerData
+    End Structure
+    Public Event BetStatusChanged(ByVal status As BetStatus)
 
     Private _tempCommentData() As Byte
     Private _needNextRecv As Boolean
@@ -823,7 +854,7 @@ Public Class guazi
         ms.Write(data, 0, length)
         ms.Position = 0
 
-        Trace.TraceInformation("Comment Socket: Received a data of " & length & " bytes")
+        Trace.TraceInformation("Socket: Received a data of " & length & " bytes")
         ' display raw data
         'Dim rawData(ms.Length - 1) As Byte
         'ms.Read(rawData, 0, length)
@@ -868,7 +899,7 @@ Public Class guazi
 
                     'trace for debug
                     Trace.TraceInformation("Parsing string:" & str)
-                    Trace.TraceInformation("[TRACE] string ends with }: " & str.EndsWith("}").ToString)
+                    'Trace.TraceInformation("[TRACE] string ends with }: " & str.EndsWith("}").ToString)
                     '判断是否需要分开读取
                     '标识符为最后一字节是否为}
                     If str.EndsWith("}") Then
@@ -1021,12 +1052,19 @@ Public Class guazi
 
                             '竞猜 文化人这种东西不能叫赌
                         Case "BET_START"
+                            RaiseEvent BetStarted()
                         Case "BET_BETTOR"
+                            Dim eventarg As BetStatus = ParseBetJson(str_obj)
+                            RaiseEvent BetStatusChanged(eventarg)
                         Case "BET_BANKER"
+                            Dim eventarg As BetStatus = ParseBetJson(str_obj)
+                            RaiseEvent BetStatusChanged(eventarg)
                         Case "BET_SEAL"
+                            RaiseEvent BetSealed()
                         Case "BET_ENDING"
+                            RaiseEvent BetEnding()
                         Case "BET_END"
-
+                            RaiseEvent BetEnded()
 
                             '更换房间信息
                         Case "CHANGE_ROOM_INFO"
@@ -1039,7 +1077,25 @@ Public Class guazi
                             RaiseEvent RoomBlockMsg(uid, uname)
 
                         Case "SEND_TOP"
+                            'todo
 
+                            '节奏风暴
+                        Case "SPECIAL_GIFT"
+                            Dim action As String = str_obj("data")("39").Value(Of String)("action")
+                            Dim roomid As UInteger = str_obj.Value(Of UInteger)("roomid")
+                            Select Case action
+                                Case "start"
+                                    Dim id As Integer = Integer.Parse(str_obj("data").Value(Of String)("id"))
+                                    Dim num As Integer = str_obj("data")("39").Value(Of Integer)("num")
+                                    Dim time As Integer = str_obj("data")("39").Value(Of Integer)("time")
+                                    Dim content As String = str_obj("data")("39").Value(Of String)("content")
+                                    Dim joined As Boolean = str_obj("data")("39").Value(Of Boolean)("hadJoin")
+                                    RaiseEvent SpecialGiftStarted(roomid, content, id, num, time, joined)
+                                Case "end"
+                                    RaiseEvent SpecialGiftEnded(roomid)
+                                Case Else
+                                    Throw New ArgumentException("读取节奏风暴参数错误：action")
+                            End Select
                         Case Else
                             RaiseEvent DebugOutput("接收到未指定类型的弹幕消息: " & str)
                     End Select
@@ -1048,6 +1104,86 @@ Public Class guazi
 
         ms.Close()
     End Sub
+    Private Function ParseBetJson(ByVal json As JObject) As BetStatus
+
+        Dim eventarg As New BetStatus
+
+        Dim betdata As JObject = json("data").Value(Of JObject)("data")
+        eventarg.question = betdata("bet").Value(Of String)("question")
+        ReDim eventarg.answer(1)
+        eventarg.answer(0) = betdata("bet").Value(Of String)("a")
+        eventarg.answer(1) = betdata("bet").Value(Of String)("b")
+        eventarg.isInBet = betdata.Value(Of Boolean)("isInBet")
+        eventarg.isBet = betdata.Value(Of Boolean)("isBet")
+        eventarg.id = betdata("bet").Value(Of UInteger)("id")
+        eventarg.uid = betdata("bet").Value(Of UInteger)("uid")
+        eventarg.updateTime = betdata("bet").Value(Of String)("update_time")
+
+        Dim hasGoldBet As Boolean, hasSilverBet As Boolean
+        If betdata("gold")("a").Value(Of UInteger)("c") <> 0 Or betdata("gold")("b").Value(Of UInteger)("c") <> 0 Then
+            hasGoldBet = True
+        End If
+        If betdata("silver")("a").Value(Of UInteger)("c") <> 0 Or betdata("silver")("b").Value(Of UInteger)("c") <> 0 Then
+            hasSilverBet = True
+        End If
+
+        Dim lsData As New List(Of BetStatus.AnswerData)
+        If hasGoldBet Then
+            Dim a, b As New BetStatus.AnswerData
+            Dim gold_betdata As JObject = betdata.Value(Of JObject)("gold")
+            a.id = gold_betdata("a").Value(Of UInteger)("id")
+            a.uid = gold_betdata("a").Value(Of UInteger)("uid")
+            a.coin = gold_betdata("a").Value(Of UInteger)("coin")
+            a.coin_type = gold_betdata("a").Value(Of String)("coin_type")
+            a.times = gold_betdata("a").Value(Of Single)("times")
+            a.amountCanBuy = gold_betdata("a").Value(Of UInteger)("amount")
+            a.amountTotal = gold_betdata("a").Value(Of UInteger)("total_amount")
+            a.amountCurrent = gold_betdata("a").Value(Of UInteger)("c")
+            a.progress = gold_betdata("a").Value(Of UInteger)("progress")
+            a.referIndex = 0
+            b.id = gold_betdata("b").Value(Of UInteger)("id")
+            b.uid = gold_betdata("b").Value(Of UInteger)("uid")
+            b.coin = gold_betdata("b").Value(Of UInteger)("coin")
+            b.coin_type = gold_betdata("b").Value(Of String)("coin_type")
+            b.times = gold_betdata("b").Value(Of Single)("times")
+            b.amountCanBuy = gold_betdata("b").Value(Of UInteger)("amount")
+            b.amountTotal = gold_betdata("b").Value(Of UInteger)("total_amount")
+            b.amountCurrent = gold_betdata("b").Value(Of UInteger)("c")
+            b.progress = gold_betdata("b").Value(Of UInteger)("progress")
+            b.referIndex = 1
+            lsData.Add(a)
+            lsData.Add(b)
+        End If
+        If hasSilverBet Then
+            Dim a, b As New BetStatus.AnswerData
+            Dim silver_betdata As JObject = betdata.Value(Of JObject)("silver")
+            a.id = silver_betdata("a").Value(Of UInteger)("id")
+            a.uid = silver_betdata("a").Value(Of UInteger)("uid")
+            a.coin = silver_betdata("a").Value(Of UInteger)("coin")
+            a.coin_type = silver_betdata("a").Value(Of String)("coin_type")
+            a.times = silver_betdata("a").Value(Of Single)("times")
+            a.amountCanBuy = silver_betdata("a").Value(Of UInteger)("amount")
+            a.amountTotal = silver_betdata("a").Value(Of UInteger)("total_amount")
+            a.amountCurrent = silver_betdata("a").Value(Of UInteger)("c")
+            a.progress = silver_betdata("a").Value(Of UInteger)("progress")
+            a.referIndex = 0
+            b.id = silver_betdata("b").Value(Of UInteger)("id")
+            b.uid = silver_betdata("b").Value(Of UInteger)("uid")
+            b.coin = silver_betdata("b").Value(Of UInteger)("coin")
+            b.coin_type = silver_betdata("b").Value(Of String)("coin_type")
+            b.times = silver_betdata("b").Value(Of Single)("times")
+            b.amountCanBuy = silver_betdata("b").Value(Of UInteger)("amount")
+            b.amountTotal = silver_betdata("b").Value(Of UInteger)("total_amount")
+            b.amountCurrent = silver_betdata("b").Value(Of UInteger)("c")
+            b.progress = silver_betdata("b").Value(Of UInteger)("progress")
+            b.referIndex = 1
+            lsData.Add(a)
+            lsData.Add(b)
+        End If
+
+        eventarg.data = lsData.ToArray
+        Return eventarg
+    End Function
     Public Sub AsyncStartReceiveComment()
         If _RoomId <= 0 Then Return
         If _CommentThd Is Nothing OrElse (_CommentThd.ThreadState = ThreadState.Stopped Or _CommentThd.ThreadState = ThreadState.Aborted) Then
@@ -1396,7 +1532,7 @@ Public Class guazi
                     headerParam.Add("X-Requested-With", "XMLHttpRequest")
 
                     '手动延迟
-                    Thread.Sleep(2000)
+                    Thread.Sleep(200)
 
                     If InStr(msg, "小电视") Then
                         req.HttpGet("http://live.bilibili.com/SmallTV/index?roomid=" & roomid & "_=" & Int(ToUnixTimestamp(Now) * 1000))
@@ -1470,6 +1606,22 @@ Public Class guazi
                     Trace.TraceError(ex.ToString)
                 Finally
                     _ActThd.Interrupt()
+                End Try
+            End Sub)
+    End Sub
+    Private Sub onSpecialGiftRecv(ByVal roomid As UInteger, ByVal content As String, ByVal id As Integer, ByVal num As Integer, ByVal time As Integer, ByVal joined As Boolean) Handles Me.SpecialGiftStarted
+        If Not _is_listening_act Then Return
+        ThreadPool.QueueUserWorkItem(
+            Sub()
+                Try
+                    Trace.TraceInformation("Joining Special Gift...")
+                    SyncSendComment(content,, roomid)
+                    RaiseEvent DebugOutput("已参加 " & roomid & " 房间的节奏风暴")
+
+                    RaiseEvent UserBaggageChanged()
+                Catch ex As Exception
+                    RaiseEvent DebugOutput("[ERR]" & ex.ToString)
+                    Trace.TraceError(ex.ToString)
                 End Try
             End Sub)
     End Sub

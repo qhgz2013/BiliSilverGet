@@ -403,6 +403,22 @@ Public Class Form1
     Private Sub OnReceivingBlockMsg(ByVal uid As Integer, ByVal uname As String) Handles gz.RoomBlockMsg
         DebugOutput("<直播间消息:已屏蔽用户 " & uname & " 的弹幕>")
     End Sub
+
+    Private Sub OnReceivingBetStarted() Handles gz.BetStarted
+        DebugOutput("<直播间消息:竞猜已开始>")
+    End Sub
+    Private Sub OnReceivingBetSealed() Handles gz.BetSealed
+        DebugOutput("<直播间消息:竞猜已封盘>")
+    End Sub
+    Private Sub OnReceivingBetEnding() Handles gz.BetEnding
+        DebugOutput("<直播间消息:竞猜正在停止>")
+    End Sub
+    Private Sub OnReceivingBetEnded() Handles gz.BetEnded
+        DebugOutput("<直播间消息:竞猜已停止>")
+    End Sub
+    Private Sub OnReceivingBetStatusChanged(ByVal status As guazi.BetStatus) Handles gz.BetStatusChanged
+        DebugOutput("<直播间消息:竞猜状态更新:" & status.answer(0) & ":" & status.data(0).amountCurrent & ", " & status.answer(1) & ":" & status.data(1).amountCurrent & ">")
+    End Sub
 #End Region
 #Region "脚本1 - 道具栏模块"
     Private _item_list As JArray = Nothing
