@@ -381,7 +381,7 @@ Public Class Form1
         DebugOutput("收到弹幕:[" & username & "] " & msg)
     End Sub
     Private Sub OnReceivingGiftSent(ByVal unixTimestamp As Long, ByVal giftName As String, ByVal giftId As Integer, ByVal giftNum As Integer, ByVal user As String) Handles gz.ReceivedGiftSent
-        DebugOutput("收到礼物:[" & user & "] " & giftName & "(id=" & giftId & ")" & " x" & giftNum)
+        DebugOutput("收到礼物:[" & user & "] " & giftName & "x" & giftNum)
     End Sub
     Private Sub OnReceivingWelcome(ByVal admin As Boolean, ByVal vip As Boolean, ByVal name As String) Handles gz.ReceivedWelcome
         DebugOutput("欢迎老爷:[" & name & "]")
@@ -417,7 +417,9 @@ Public Class Form1
         DebugOutput("<直播间消息:竞猜已停止>")
     End Sub
     Private Sub OnReceivingBetStatusChanged(ByVal status As guazi.BetStatus) Handles gz.BetStatusChanged
-        DebugOutput("<直播间消息:竞猜状态更新:" & status.answer(0) & ":" & status.data(0).amountCurrent & ", " & status.answer(1) & ":" & status.data(1).amountCurrent & ">")
+        If status.data.Length >= 2 Then
+            DebugOutput("<直播间消息:竞猜状态更新:" & status.question & ":" & status.answer(0) & ":" & status.data(0).amountCurrent & ", " & status.answer(1) & ":" & status.data(1).amountCurrent & ">")
+        End If
     End Sub
 #End Region
 #Region "脚本1 - 道具栏模块"
@@ -556,6 +558,7 @@ Public Class Form1
         If Not _initflag Then Return
         SaveGuaziConfig()
 
+        'Return
         If AutoStartSpecialEvent.Checked Then
             gz.AsyncBeginTimeLimitedEvent()
         Else

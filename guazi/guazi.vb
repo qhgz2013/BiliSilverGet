@@ -1264,20 +1264,26 @@ Public Class guazi
         _liveOnThd.Abort()
     End Sub
 
-    'b站限时活动 目前是领取什么扇的活动，所以在活动结束后不要调用 :-D
+    'b站限时活动 目前是领取红薯的活动，所以在活动结束后不要调用 :-D
     Private _timeLimitEventThd As Thread
     Private Sub EventThdCallback()
         If _RoomId <= 0 Then Return
         Dim req As NetStream = get_request_option()
-        Dim url As String = "http://live.bilibili.com/summer/heart"
+        Dim url As String = "http://live.bilibili.com/eventRoom/heart"
+
+        Dim continueGet As Boolean
         Try
-            Dim preload_url As String = "http://live.bilibili.com/summer/getSummerRoom?ruid=" & _RoomInfo("data").Value(Of Integer)("MASTERID")
+            Dim preload_url As String = "http://live.bilibili.com/eventRoom/index?ruid=" & _RoomInfo("data").Value(Of Integer)("MASTERID")
             req.HttpGet(preload_url)
             Dim preload_str As String = req.ReadResponseString
             req.Close()
+            Dim json As JObject = JsonConvert.DeserializeObject(preload_str)
+            continueGet = json("data").Value(Of Boolean)("heart")
 
             Trace.TraceInformation("Get Summer Special Event succeeded, response returned value:")
             Trace.TraceInformation("    " & preload_str)
+
+            If Not continueGet Then Return
         Catch ex As Exception
             Trace.TraceError(ex.ToString)
             Return
@@ -1287,11 +1293,19 @@ Public Class guazi
             Try
                 Dim next_time As Date = Now.AddMinutes(5)
 
+                RaiseEvent NextEventGrabTime(next_time)
+
+                Dim sleep_time As TimeSpan = next_time - Now
+                If sleep_time.TotalMilliseconds > 0 Then Thread.Sleep(sleep_time)
+
                 Dim httpHeader As New Parameters
                 httpHeader.Add("X-Requested-With", "XMLHttpRequest")
                 httpHeader.Add("Referer", "http://live.bilibili.com/" & _RoomURL)
                 httpHeader.Add("Origin", "http://live.bilibili.com")
-                req.HttpPost(url, New Byte() {}, "text/html", httpHeader)
+
+                Dim postData As New Parameters
+                postData.Add("roomid", _RoomId)
+                req.HttpPost(url, postData,, httpHeader)
                 Dim ret_str As String = req.ReadResponseString
 
                 Trace.TraceInformation("Sending Special Event Heartbeat succeeded, response returned value:")
@@ -1302,16 +1316,12 @@ Public Class guazi
                 RaiseEvent UserBaggageChanged()
 
                 Dim json As JObject = JsonConvert.DeserializeObject(ret_str)
-                Dim continueGet As Boolean = json("data").Value(Of Boolean)("summerHeart")
+                continueGet = json("data").Value(Of Boolean)("heart")
 
                 If Not continueGet Then
-                    RaiseEvent DebugOutput("本日团扇已领完")
+                    RaiseEvent DebugOutput("本日红薯已领完")
                     Return
                 End If
-                RaiseEvent NextEventGrabTime(next_time)
-
-                Dim sleep_time As TimeSpan = next_time - Now
-                If sleep_time.TotalMilliseconds > 0 Then Thread.Sleep(sleep_time)
             Catch ex2 As ThreadAbortException
                 Exit Do
             Catch ex As Exception
