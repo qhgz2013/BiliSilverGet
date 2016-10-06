@@ -4,6 +4,7 @@ Imports System.Text
 Imports VBUtil.Utils
 Imports VBUtil.Utils.NetUtils
 Imports Newtonsoft.Json.Linq
+'Imports asprise_ocr_api
 
 Public Class Form1
 #Region "调试输出控制部分[多线程调度安全]"
@@ -159,6 +160,9 @@ Public Class Form1
     End Sub
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         _initflag = False
+        'ocr
+        'AspriseOCR.SetUp()
+
         '读取cookie
         Utils.NetUtils.LoadCookie(Application.StartupPath & "\cookie.dat")
         'Trace配置
@@ -299,7 +303,7 @@ Public Class Form1
     Private Sub AutoGrab_CheckedChanged(sender As Object, e As EventArgs) Handles AutoGrab.CheckedChanged
         If Not _initflag Then Return
         SaveGuaziConfig()
-        If AutoGrab.Checked Then gz.AsyncStartGrabbingSilver()
+        If AutoGrab.Checked Then gz.AsyncStartGrabbingSilver() Else gz.AsyncEndGrabbingSilver()
     End Sub
 
     Private Sub goFuck(sender As Object, e As EventArgs)

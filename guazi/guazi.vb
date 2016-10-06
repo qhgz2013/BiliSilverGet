@@ -21,6 +21,7 @@ Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
 Imports System.Net
 Imports System.Net.Sockets
+Imports System.Runtime.InteropServices
 
 ''' <summary>
 ''' 哼，我就要瓜子，你来咬我啊
@@ -28,6 +29,22 @@ Imports System.Net.Sockets
 ''' <remarks></remarks>
 
 Public Module Variables
+    <DllImport("AspriseOCR.dll", EntryPoint:="OCR", CallingConvention:=CallingConvention.Cdecl)>
+    Public Function OCR(file As String, type As Integer) As IntPtr
+
+    End Function
+    <DllImport("AspriseOCR.dll", EntryPoint:="OCRpart", CallingConvention:=CallingConvention.Cdecl)>
+    Public Function OCRpart(file As String, type As Integer, startX As Integer, startY As Integer, width As Integer, height As Integer) As IntPtr
+
+    End Function
+    <DllImport("AspriseOCR.dll", EntryPoint:="OCRBarCodes", CallingConvention:=CallingConvention.Cdecl)>
+    Public Function OCRBarCodes(file As String, type As Integer) As IntPtr
+
+    End Function
+    <DllImport("AspriseOCR.dll", EntryPoint:="OCRpartBarCodes", CallingConvention:=CallingConvention.Cdecl)>
+    Public Function OCRpartBarCodes(file As String, type As Integer, startX As Integer, startY As Integer, width As Integer, height As Integer) As IntPtr
+
+    End Function
 End Module
 Public Class guazi
     Public Event DebugOutput(ByVal msg As String)
@@ -35,20 +52,13 @@ Public Class guazi
 
     Private _workThd As Thread
     Private _startTime As Integer
+    Private _timeStart As UInteger
+    Private _timeEnd As UInteger
     Private _RoomId As Integer
     Private _RoomURL As Integer
     Private _RoomInfo As JObject
 
-    Private Const APPKEY As String = "85eb6835b0a1034e"
-    Private Const SECRETKEY As String = "2ad42749773c441109bdc0191257a664"
-    Private Const VER As String = "0.98.86"
-
     'grabbing silver module
-    Private Function calc_sign(ByVal str As String) As String
-        Dim md5 As New System.Security.Cryptography.MD5CryptoServiceProvider
-
-        Return Utils.Others.Hex(md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(str))).ToLower
-    End Function
     Private Function get_request_option() As NetStream
         Dim ret As New NetStream
         ret.Timeout = 15000
@@ -84,7 +94,7 @@ Public Class guazi
                         End Try
                         Dim code As Integer = je.Value(Of Integer)("code")
                         If code = -10017 Then
-                            RaiseEvent DebugOutput("本日瓜子已领完，欢迎下次再来XD")
+                            RaiseEvent DebugOutput("本日瓜子已领完， 欢迎下次再来XD")
                             RaiseEvent FinishedGrabbing()
                             Exit Try
                         End If
@@ -93,6 +103,8 @@ Public Class guazi
                     '计算时间
                     Dim minutes As Integer = je("data").Value(Of Integer)("minute")
                     silver = je("data").Value(Of Integer)("silver")
+                    _timeStart = je("data").Value(Of UInteger)("time_start")
+                    _timeEnd = je("data").Value(Of UInteger)("time_end")
                     _expireTime = Now.AddMinutes(minutes) '这里用回原来的计时方法是为了避免本地计算机时间的误差造成的领取错误（某些电脑快了或者慢了大半天什么的早醉了）
                     '_expireTime = FromUnixTimeStamp(je("data").Value(Of ULong)("time_end"))
                 End If
@@ -110,7 +122,7 @@ Public Class guazi
                         total_silver = je("data").Value(Of Integer)("silver")
 
                         If getsilver > 0 Then
-                            RaiseEvent DebugOutput("领取成功！得到" & getsilver & "个银瓜子(总" & total_silver & "个)")
+                            RaiseEvent DebugOutput("领取成功!得到" & getsilver & "个银瓜子(总" & total_silver & "个)")
                             _expireTime = Date.MinValue
                         End If
                     Else
@@ -124,7 +136,7 @@ Public Class guazi
 
             Loop
         Catch ex As Exception
-            RaiseEvent DebugOutput("[ERR] 抛出异常: " & vbCrLf & ex.ToString)
+            RaiseEvent DebugOutput("[ERR] 抛出异常 " & vbCrLf & ex.ToString)
             Trace.TraceError(ex.ToString)
         End Try
     End Sub
@@ -150,7 +162,7 @@ Public Class guazi
 
         Dim str As String = req.ReadResponseString
 
-        Trace.TraceInformation("Get room #" & _RoomURL & "(" & _RoomId & ") info succeeded, response returned value:")
+        Trace.TraceInformation("Get room #" & _RoomURL & "(" & _RoomId & ") info succeeded, response returned value")
         Trace.TraceInformation("    " & str)
 
         req.Close()
@@ -180,7 +192,7 @@ Public Class guazi
         req.Close()
 
         Dim reg As Match = Regex.Match(str, "var\s+ROOMID\s+=\s+(\d+);")
-        If reg.Success = False Then Throw New ArgumentException("Can not get RoomID")
+        If reg.Success = False Then Throw New ArgumentException("Can Not get RoomID")
         Dim roomId As Integer = Integer.Parse(reg.Result("$1"))
         _listUrlIdReflect.Add(url, roomId)
         Return roomId
@@ -193,21 +205,13 @@ Public Class guazi
     ''' <returns>请求后返回的JSON对象</returns>
     ''' <remarks></remarks>
     Private Function get_new_task_time_and_award() As JObject
-        Dim url As String = "http://live.bilibili.com/mobile/freeSilverCurrentTask"
-
-
-        Dim param As New Parameters
-        param.Add("appkey", APPKEY)
-        param.Add("platform", "ios")
-
-        'sign calc
-        param.Add("sign", calc_sign(param.BuildURLQuery & SECRETKEY))
+        Dim url As String = "http://live.bilibili.com/FreeSilver/getCurrentTask"
 
         Dim req As NetStream = get_request_option()
-        req.HttpGet(url, , param)
+        req.HttpGet(url)
         Dim str As String = req.ReadResponseString
 
-        Trace.TraceInformation("Get new tasks succeeded, response returned value:")
+        Trace.TraceInformation("Get New tasks succeeded, response returned value:")
         Trace.TraceInformation("    " & str)
 
         req.Close()
@@ -216,46 +220,89 @@ Public Class guazi
 
         Return ret
     End Function
-
     ''' <summary>
-    ''' 发送心跳包
+    ''' 获取宝箱的验证计算图
     ''' </summary>
-    ''' <returns>心跳包返回的状态码</returns>
-    ''' <remarks></remarks>
-    Private Function send_heartbeat() As JObject
-        Dim url As String = "http://live.bilibili.com/mobile/freeSilverHeart"
+    ''' <returns></returns>
+    Private Function get_captcha() As Image
+        Dim url As String = "http://live.bilibili.com/FreeSilver/getCaptcha?ts=" & Int(ToUnixTimestamp(Now))
         Dim req As NetStream = get_request_option()
-        Dim param As New Parameters
 
-        param.Add("appkey", APPKEY)
-        param.Add("platform", "ios")
-        param.Add("sign", calc_sign(param.BuildURLQuery & SECRETKEY))
-
-        req.HttpGet(url, , param)
-        Dim str As String = ReadToEnd(req.Stream)
-
-        Trace.TraceInformation("Send Heartbeat succeeded, response returned value:")
-        Trace.TraceInformation("    " & str)
-
-        Dim a As JObject = JsonConvert.DeserializeObject(str)
-        req.Close()
-
-        Return a
+        req.HttpGet(url)
+        Dim mm As New MemoryStream()
+        Dim r As Integer = 0
+        Dim buf(4095) As Byte
+        Do
+            r = req.Stream.Read(buf, 0, 4096)
+            mm.Write(buf, 0, r) 'transform http stream to local memory stream
+        Loop Until r = 0
+        mm.Position = 0
+        Return Image.FromStream(mm)
     End Function
+    ''' <summary>
+    ''' 分析并计算宝箱的验证图
+    ''' </summary>
+    ''' <param name="img">图片</param>
+    ''' <returns></returns>
+    Private Function analyse_captcha(ByVal img As Image) As Integer
+        'Dim ocr As New asprise_ocr_api.AspriseOCR
+        'Dim ocr As Patagames.Ocr.OcrApi = Patagames.Ocr.OcrApi.Create
+        'OCR.StartEngine("eng", asprise_ocr_api.AspriseOCR.SPEED_SLOW)
+        'OCR.Init(Patagames.Ocr.Enums.Languages.English)
 
+        Dim tempFile As String = "temp_" & Int(ToUnixTimestamp(Now)) & ".jpg"
+        img.Save(tempFile)
+        Dim result As String = Marshal.PtrToStringAnsi(OCR(tempFile, -1)) 'OCR.Recognize(tempFile, -1, -1, -1, -1, -1, asprise_ocr_api.AspriseOCR.RECOGNIZE_TYPE_ALL, asprise_ocr_api.AspriseOCR.OUTPUT_FORMAT_PLAINTEXT)
+        'Dim result As String = ocr.GetTextFromImage(img)
+        Trace.TraceInformation("OCR Image Result: " & result)
+        'ocr.StopEngine()
+        If File.Exists(tempFile) Then File.Delete(tempFile)
+        'computing
+        Dim mat As Match = Regex.Match(result, "^\s*(?<first>\d+)\s*(?<operator>[+-])\s*(?<second>\d+)\s*$")
+        If mat.Success Then
+            Dim first As Integer = Integer.Parse(mat.Result("${first}"))
+            Dim second As Integer = Integer.Parse(mat.Result("${second}"))
+            Dim _operator As String = mat.Result("${operator}")
+            Select Case _operator
+                Case "+"
+                    Return first + second
+                Case "-"
+                    Return first - second
+                Case Else
+                    Return -1 'failed : operator invalid
+            End Select
+        Else
+            Return -1 'failed : string invalid
+        End If
+
+    End Function
     ''' <summary>
     ''' 领取瓜子
     ''' </summary>
     ''' <returns></returns>
     ''' <remarks></remarks>
     Private Function get_award() As JObject
-        Dim url As String = "http://live.bilibili.com/mobile/freeSilverAward"
+        Dim url As String = "http://live.bilibili.com/FreeSilver/getAward"
         Dim req As NetStream = get_request_option()
         Dim param As New Parameters
-        param.Add("appkey", APPKEY)
-        param.Add("platform", "ios")
+        param.Add("time_start", _timeStart)
+        param.Add("time_end", _timeEnd)
 
-        param.Add("sign", calc_sign(param.BuildURLQuery & SECRETKEY))
+        'captcha
+        Dim captcha As Image
+
+        Dim answer As Integer = -1
+        Do
+            Try
+                captcha = get_captcha()
+                answer = analyse_captcha(captcha)
+
+            Catch ex As Exception
+
+            End Try
+        Loop While answer = -1
+
+        param.Add("captcha", answer)
 
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
@@ -264,7 +311,6 @@ Public Class guazi
         Trace.TraceInformation("    " & str)
 
         Dim a As JObject = JsonConvert.DeserializeObject(str)
-        Dim statuscode As HttpStatusCode = req.HTTP_Response.StatusCode
         req.Close()
 
         If a.Value(Of Integer)("code") <> 0 Then
@@ -287,9 +333,9 @@ Public Class guazi
         req.ReadWriteTimeout = 5000
         req.Timeout = 5000
         Dim param As New Parameters
-        param.Add("appkey", APPKEY)
+        'param.Add("appkey", APPKEY)
         param.Add("platform", "ios")
-        param.Add("sign", calc_sign(param.BuildURLQuery & SECRETKEY))
+        'param.Add("sign", calc_sign(param.BuildURLQuery & SECRETKEY))
         req.HttpGet(url, , param)
         Dim str As String = ReadToEnd(req.Stream)
 
@@ -500,7 +546,8 @@ Public Class guazi
     '停止领取瓜子
     Public Sub AsyncEndGrabbingSilver()
         If _workThd Is Nothing Then Return
-        If _workThd.ThreadState = ThreadState.Running Or _workThd.ThreadState = ThreadState.WaitSleepJoin Then
+        Debug.Print(_workThd.ThreadState.ToString)
+        If (_workThd.ThreadState Or ThreadState.Running) Or (_workThd.ThreadState Or ThreadState.WaitSleepJoin) Then
             _workThd.Abort()
         End If
     End Sub
@@ -1574,7 +1621,7 @@ Public Class guazi
                         Next
 
                     ElseIf InStr(msg, "刨冰雨") Then
-                        req.HttpGet("http://live.bilibili.com/summer/check?roomid=" & RoomID, headerParam)
+                        req.HttpGet("http://live.bilibili.com/summer/check?roomid=" & roomid, headerParam)
                         Dim str As String = req.ReadResponseString
 
                         Trace.TraceInformation("Checking Ice Activities succeeded:")
