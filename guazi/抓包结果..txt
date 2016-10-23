@@ -10,18 +10,13 @@ HTTP GET : http://live.bilibili.com/[房间cid]
 宝箱相关:
 
 获取新的宝箱任务:
-HTTP GET : http://live.bilibili.com/mobile/freeSilverCurrentTask?appkey=85eb6835b0a1034e&platform=ios&sign=be2e9b9c5b9143cea6967f7d77912ed2
-appkey是拿别人的，sign的计算由于query string和secret key是固定的，所以也不会发生改变，可以直接用
+HTTP GET : http://live.bilibili.com/FreeSilver/getCurrentTask
 
-发送宝箱领取的心跳包:
-获取宝箱后到领取宝箱前都可以发送，间隔1min
-HTTP GET: http://live.bilibili.com/mobile/freeSilverHeart?appkey=85eb6835b0a1034e&platform=ios&sign=be2e9b9c5b9143cea6967f7d77912ed2
-
-领取宝箱前的检查，防止各种意外事故:
-HTTP GET: http://live.bilibili.com/mobile/freeSilverSurplus?appkey=85eb6835b0a1034e&platform=ios&sign=be2e9b9c5b9143cea6967f7d77912ed2
+验证图片:
+HTTP GET : http://live.bilibili.com/FreeSilver/getCaptcha?ts=[当前时间戳]
 
 领取宝箱:
-HTTP GET: http://live.bilibili.com/mobile/freeSilverAward?appkey=85eb6835b0a1034e&platform=ios&sign=be2e9b9c5b9143cea6967f7d77912ed2
+HTTP GET: http://live.bilibili.com/FreeSilver/getAward?time_start=[宝箱任务的开始时间]&time_end=[宝箱任务的结束时间]&captcha=验证码
 
 
 
@@ -61,7 +56,7 @@ HTTP POST: http://live.bilibili.com/User/userOnlineHeart
 5分钟发一次，只要post就好了，没有要发送的内容
 
 目前的限时活动
-HTTP POST: http://live.bilibili.com/summer/heart
+HTTP POST: http://live.bilibili.com/eventRoom/heart
 同上
 
 弹幕发送

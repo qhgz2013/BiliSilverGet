@@ -715,7 +715,7 @@ Public Class guazi
     '弹幕
     Private _CommentThd As Thread
     Private _CommentHeartBeat As Thread
-    Private Const DEFAULT_COMMENT_HOST As String = "livecmt-1.bilibili.com"
+    Private Const DEFAULT_COMMENT_HOST As String = "dm.live.bilibili.com"
     Private Const DEFAULT_COMMENT_PORT As Integer = 788
     Private _CommentSocket As Socket
     Private _isReceivingComment As Boolean
