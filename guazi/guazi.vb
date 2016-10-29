@@ -478,11 +478,15 @@ Public Class guazi
             req_param.Add("num", giftnum)
             req_param.Add("coinType", "silver")
             req_param.Add("Bag_id", bagid)
-            req_param.Add("timestamp", CInt(VBUtil.Utils.Others.ToUnixTimestamp(Now)))
-            req_param.Add("rnd", VBUtil.Utils.Others.rand.Next())
+            req_param.Add("timestamp", CInt(ToUnixTimestamp(Now)))
+            req_param.Add("rnd", CInt(ToUnixTimestamp(Now)))
             req_param.Add("token", DefaultCookieContainer.GetCookies(New Uri(gift_send_url))("LIVE_LOGIN_DATA").Value)
 
-            http_req.HttpPost(gift_send_url, req_param)
+            Dim header_param As New Parameters
+            header_param.Add("X-Requested-With", "XMLHttpRequest")
+            header_param.Add("Origin", "http://live.bilibili.com")
+            header_param.Add("Referer", "http://live.bilibili.com/" & _RoomURL)
+            http_req.HttpPost(gift_send_url, req_param,, header_param)
 
             Dim post_result As String = http_req.ReadResponseString
             http_req.Close()
@@ -1714,7 +1718,7 @@ End Class
 ''' <remarks></remarks>
 Public Module Bilibili_Login
     Public Const LOGIN_URL As String = "https://passport.bilibili.com/login/dologin"
-    Public Const LOGOUT_URL As String = "https://account.bilibili.com/login"
+    Public Const LOGOUT_URL As String = "https://passport.bilibili.com/login"
     Public Const BACKUP_LOGIN_URL As String = "https://passport.bilibili.com/ajax/miniLogin/login"
     Public Const LOGIN_PUBLIC_KEY As String = "https://passport.bilibili.com/login?act=getkey"
     Public Const BILIBILI_MAIN_PAGE As String = "http://www.bilibili.com"
@@ -1785,71 +1789,6 @@ Public Module Bilibili_Login
             login_result = str
         End If
         'Form1.DebugOutput("返回数据: " & str)
-
-        Return CheckLogin()
-    End Function
-
-    ''' <summary>
-    ''' 使用精简登录模块，若密码输入不出错，则不需输入验证码
-    ''' </summary>
-    ''' <param name="userid">用户ID</param>
-    ''' <param name="pwd">密码</param>
-    ''' <param name="captcha">验证码</param>
-    ''' <returns>登录是否成功</returns>
-    ''' <remarks></remarks>
-    Public Function LoginBackup(ByVal userid As String, ByVal pwd As String, Optional ByVal captcha As String = "", Optional ByRef login_result As String = Nothing) As Boolean
-        Dim param As New Parameters
-        param.Add("userid", userid)
-
-        'Form1.DebugOutput("用户名: " & userid)
-
-        'RSA加密
-        Dim req As New NetStream
-        req.Timeout = 15000
-        req.RetryTimes = 20
-
-        'Form1.DebugOutput("获取RSA公钥URL: " & LOGIN_PUBLIC_KEY)
-        req.HttpGet(LOGIN_PUBLIC_KEY)
-        Dim loginRequest As String = ReadToEnd(req.Stream)
-        Dim loginRequest2 As JObject = JsonConvert.DeserializeObject(loginRequest)
-
-        Dim rsaPublicKey As String = loginRequest2.Value(Of String)("key")
-        Dim hash As String = loginRequest2.Value(Of String)("hash")
-        req.Close()
-
-        'Form1.DebugOutput("RSA公钥: " & rsaPublicKey)
-
-        Dim rsa1 As New System.Security.Cryptography.RSACryptoServiceProvider
-        rsa1.ImportParameters(RSA.ConvertFromPemPublicKey(rsaPublicKey))
-
-        'Form1.DebugOutput("本地RSA XML数据: " & rsa1.ToXmlString(False))
-
-        pwd = hash & pwd
-        Dim tempPwd() As Byte = System.Text.Encoding.GetEncoding(DEFAULT_ENCODING).GetBytes(pwd)
-
-        Dim password() As Byte = rsa1.Encrypt(tempPwd, False)
-
-        pwd = Convert.ToBase64String(password)
-
-        param.Add("pwd", pwd)
-
-        'Form1.DebugOutput("加密后的密码: " & pwd)
-
-        param.Add("captcha", captcha)
-        param.Add("keep", 1)
-
-
-        'Form1.DebugOutput("发送登录信息...")
-
-
-        req.HttpPost(BACKUP_LOGIN_URL, param)
-        Dim str As String = ReadToEnd(req.Stream)
-        req.Close()
-
-        If login_result IsNot Nothing Then
-            login_result = str
-        End If
-        'Form1.DebugOutput("返回数据: " & str.Replace(vbCr, "").Replace(vbLf, ""))
 
         Return CheckLogin()
     End Function

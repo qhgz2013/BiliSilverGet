@@ -10,9 +10,9 @@ Project 2016 填坑计划
 1. 点击Clone或者下载zip获取代码
 2. 使用Visual Studio 2015编译（其实应该没什么所谓，只要支持.net 4.0就好了，之前用vs2013和vs2012都编译过）
 3. 选择 `x86平台` ，生成目标程序，运行就好了
-4. 按照提示登录，PS：验证码接口一直懒着没做，因为是用miniLogin的所以在一般情况下是免验证码的 `注意：该登陆算法为RSA加密， *非官方开放接口* ，开发者不承担用户因账号丢失所损失的一切费用`
+4. 按照提示登录，PS：验证码接口一直懒着没做，因为是用miniLogin的所以在一般情况下是免验证码的 `注意：该登陆算法为RSA加密， * 非官方开放接口 * ，开发者不承担用户因账号丢失所损失的一切费用`
 5. 勾选自己需要的功能就ok了，如果不管用的话可以尝试再次勾选
-6. 注意：开机启动需要用到管理员权限，运行时请右键——以管理员身份运行，否则会抛出权限不足异常 `还有就是win10好奇怪，注册表开机启动不管用了？`
+6. 额。。win10的开机启动目前还是迷
 
 ### 说明
 - b站登录接口是自己抓包的，想要了解更多，请见`登录说明`
@@ -22,6 +22,7 @@ Project 2016 填坑计划
 ### 更新
 v1.7
 - 之前使用的手机版瓜子搜刮api被提示 `api sign invalid(code=-3)` ，再次换成电脑版接口+OCR验证码识别，初步测试运行良好
+- 更换弹幕发送的域名
 
 v1.6
 - 支持竞猜数据实时更新
@@ -54,18 +55,8 @@ v1.1
 - 多线程代码优化
 
 ### License
+GNU GPLv3
 
-**Doubi License**
-<br/>
-Version 1.0, January 2016
-
-> Everyone is permitted to copy and distribute verbatim or modified copies of this license document.
-And changing it is allowed.
-
-**TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION**
-<br/>
-0. You can copy, modify and distribute all the code, but making a profit is not allowed.
-<br/>
 <p align="right">
 Project 2016<br/>
 Pandasxd

@@ -245,149 +245,44 @@ Namespace Utils
             Public Shared Function parseCookie(ByVal header As String, ByVal defaultDomain As String) As Net.CookieCollection
                 Dim ret As New Net.CookieCollection
                 Dim i As Integer = 0
+                Dim arg As New Dictionary(Of String, String)
 
                 While i < Len(header)
                     skipChar(header, i)
                     'read cookie name
-                    Dim name As String = ""
-                    While i < Len(header) AndAlso header(i) <> "="c
-                        name &= header(i)
-                        i += 1
-                    End While
-
+                    Dim name As String = parseCookieValue(header, i, ";;name")
                     i += 1
-
+                    skipChar(header, i)
                     'read cookie value [ps:没有试过parse带有";"的value 报错我可不管啊
-                    Dim value As String = parseCookieValue(header, i)
-                    i += 1
-
-                    Dim has_exp_time As Boolean = False, has_max_age As Boolean = False, has_path As Boolean = False, has_domain As Boolean = False
-                    Dim exp_time As Date = New Date(2000, 1, 1, 0, 0, 0)
-                    Dim max_age As Integer
-                    Dim path As String = ""
-                    Dim domain As String = ""
-                    Dim http_only As Boolean = False
-                    Dim version As String = ""
-                    Dim secure As Boolean = False
+                    Dim value As String = parseCookieValue(header, i, ";;value")
                     While i < Len(header) AndAlso header(i) <> ","c
-
+                        i += 1
                         skipChar(header, i)
-                        If (header(i) = ";") Then i += 1
-                        'expire time
-                        If Mid(header, i + 1, 7).ToLower = "expires" Then
-                            i += 8 'skip "expires="
-                            Dim days As String = Mid(header, i + 1, 3)
-                            i += 4 'skip day("Sun" "Mon" etc)
-                            skipChar(header, i)
-
-                            'date, format="dd-MMM-yy[yy] HH:mm:ss [GMT]"
-                            exp_time = exp_time.AddDays(Integer.Parse(Mid(header, i + 1, 2)) - 1)
-                            i += 3
-                            Select Case Mid(header, i + 1, 3)
-                                Case "Jan"
-                                    exp_time = exp_time.AddMonths(0)
-                                Case "Feb"
-                                    exp_time = exp_time.AddMonths(1)
-                                Case "Mar"
-                                    exp_time = exp_time.AddMonths(2)
-                                Case "Apr"
-                                    exp_time = exp_time.AddMonths(3)
-                                Case "May"
-                                    exp_time = exp_time.AddMonths(4)
-                                Case "Jun"
-                                    exp_time = exp_time.AddMonths(5)
-                                Case "Jul"
-                                    exp_time = exp_time.AddMonths(6)
-                                Case "Aug"
-                                    exp_time = exp_time.AddMonths(7)
-                                Case "Sep"
-                                    exp_time = exp_time.AddMonths(8)
-                                Case "Oct"
-                                    exp_time = exp_time.AddMonths(9)
-                                Case "Nov"
-                                    exp_time = exp_time.AddMonths(10)
-                                Case "Dec"
-                                    exp_time = exp_time.AddMonths(11)
-                                Case Else
-                                    Throw New InvalidCastException("Invalid Month Name: " & Mid(header, i + 1, 2))
-                            End Select
-                            i += 4
-                            If IsNumeric(Mid(header, i + 1, 4)) Then
-                                exp_time = exp_time.AddYears(Integer.Parse(Mid(header, i + 1, 4)) - 2000)
-                                i += 4
-                            Else
-                                exp_time = exp_time.AddYears(Integer.Parse(Mid(header, i + 1, 2)))
-                                i += 2
-                                While Mid(exp_time.DayOfWeek.ToString, 1, 3) <> days
-                                    exp_time = exp_time.AddYears(100)
-                                End While
-                            End If
-
-                            skipChar(header, i)
-                            exp_time = exp_time.AddHours(Integer.Parse(Mid(header, i + 1, 2)))
-                            i += 3
-                            exp_time = exp_time.AddMinutes(Integer.Parse(Mid(header, i + 1, 2)))
-                            i += 3
-                            exp_time = exp_time.AddSeconds(Integer.Parse(Mid(header, i + 1, 2)))
-                            i += 2
-                            skipChar(header, i)
-                            If Mid(header, i + 1, 3).ToUpper = "GMT" Then
-                                i += 3
-                                skipChar(header, i)
-                            End If
-                            If i < Len(header) AndAlso header(i) <> ";" AndAlso header(i) <> ","c Then Throw New Exception("Invalid splitter after expires")
-                            If i < Len(header) AndAlso header(i) = ";" Then i += 1
-
-                            has_exp_time = True
-
-                            'max age
-                        ElseIf Mid(header, i + 1, 7).ToLower = "max-age" Then
-                            'has_max_age = True
-                            i += 8
-                            has_max_age = Integer.TryParse(parseCookieValue(header, i), max_age)
-
-                            skipChar(header, i)
-                            If i < Len(header) AndAlso header(i) <> ";" AndAlso header(i) <> ","c Then Throw New Exception("Invalid splitter after expires")
-                            If i < Len(header) AndAlso header(i) = ";" Then i += 1
-
-                            'path
-                        ElseIf Mid(header, i + 1, 4).ToLower = "path" Then
-                            has_path = True
-                            i += 5
-                            path = parseCookieValue(header, i)
-                            If i < Len(header) AndAlso header(i) = ";" Then i += 1
-
-                            'domain 
-                        ElseIf Mid(header, i + 1, 6).ToLower = "domain" Then
-                            has_domain = True
-                            i += 7
-                            domain = parseCookieValue(header, i)
-                            If String.IsNullOrEmpty(domain) Then has_domain = False
-                            If i < Len(header) AndAlso header(i) = ";" Then i += 1
-                            'httponly
-                        ElseIf Mid(header, i + 1, 8).ToLower = "httponly" Then
-                            http_only = True
-                            i += 8
-                            If i < Len(header) AndAlso header(i) = ";" Then i += 1
-                            'secure
-                        ElseIf Mid(header, i + 1, 6).ToLower = "secure" Then
-                            secure = True
-                            i += 6
-                            If i < Len(header) AndAlso header(i) = ";" Then i += 1
-                            'version
-                        ElseIf Mid(header, i + 1, 7).ToLower = "version" Then
-                            i += 8
-                            version = parseCookieValue(header, i)
-                            If i < Len(header) AndAlso header(i) = ";" Then i += 1
-                        End If
+                        Dim pkey As String = parseCookieValue(header, i, ";;name").ToLower
+                        i += 1
+                        skipChar(header, i)
+                        Dim pvalue As String = parseCookieValue(header, i, pkey)
+                        skipChar(header, i)
+                        arg.Add(pkey, pvalue)
                     End While
                     If i >= Len(header) OrElse header(i) = "," Then
                         i += 1
-                        Dim c As New Net.Cookie(name, value, If(has_path, path, "/"), If(has_domain, domain, defaultDomain))
-                        'c.Domain = domain
-                        c.HttpOnly = http_only
-                        If has_exp_time Then c.Expires = exp_time 'Else c.Expires = Now
-                        ret.Add(c)
+                        Dim skipflg As Boolean = False
+                        If Not arg.ContainsKey("path") Then skipflg = True
+                        Dim c As New Net.Cookie(name, value, arg("path"), If(arg.ContainsKey("domain"), arg("domain"), defaultDomain))
+                        c.HttpOnly = arg.ContainsKey("httponly")
+
+                        If arg.ContainsKey("max-age") Then
+                            c.Expires = Now.AddSeconds(Integer.Parse(arg("max-age")))
+                        ElseIf arg.ContainsKey("maxage") Then
+                            c.Expires = Now.AddSeconds(Integer.Parse(arg("maxage")))
+                        ElseIf arg.ContainsKey("expires") Then
+                            c.Expires = parseCookieExpireTime(arg("expires"))
+                        Else
+                            skipflg = True
+                        End If
+                        arg.Clear()
+                        If (Not skipflg) Then ret.Add(c)
                     End If
                 End While
 
@@ -401,14 +296,63 @@ Namespace Utils
             ''' <param name="i">当前解析的字符串下标</param>
             ''' <returns>cookie的值</returns>
             ''' <remarks></remarks>
-            Private Shared Function parseCookieValue(ByVal header As String, ByRef i As Integer) As String
+            Private Shared Function parseCookieValue(ByVal header As String, ByRef i As Integer, ByVal propertyName As String) As String
                 Dim value As String = ""
-                While i < Len(header) AndAlso header(i) <> ";"c AndAlso header(i) <> ","c
+                Dim limitStr As String
+                If propertyName = ";;name" Then
+                    limitStr = ";,="
+                ElseIf propertyName = ";;value" Then
+                    limitStr = ";,"
+                ElseIf propertyName = "expires" Then
+                    limitStr = ";="
+                Else
+                    limitStr = ";,"
+                End If
+                While i < Len(header) AndAlso InStr(limitStr, header(i)) = 0
                     value &= header(i)
                     i += 1
                 End While
                 value = value.Trim("""")
                 Return value
+            End Function
+            Private Shared Function parseCookieExpireTime(ByVal str As String) As Date
+                'format: [Day], dd-MMM-yy[yy] HH:mm:ss [GMT[+/-x]]
+                Dim i As Integer = 4
+                skipChar(str, i)
+                Dim day As Integer = Integer.Parse(Mid(str, i + 1, 2))
+                i += 3
+                Dim smonth As String = Mid(str, i + 1, 3)
+                i += 4
+                Dim csmonth As String = "JanFebMarAprMayJunJulAugSepOctNovDec"
+                Dim month As Integer = (InStr(csmonth, smonth, CompareMethod.Text) + 2) / 3
+                If month > 12 Or month < 1 Then Throw New ArgumentException("Cookie的月份数值出错")
+                Dim year As Integer
+                If IsNumeric(Mid(str, i + 1, 4)) Then
+                    year = Integer.Parse(Mid(str, i + 1, 4))
+                    i += 5
+                Else
+                    year = Integer.Parse(Mid(str, i + 1, 2)) + Int(Now.Year / 100) * 100
+                    i += 3
+                End If
+                skipChar(str, i)
+                Dim hour As Integer = Integer.Parse(Mid(str, i + 1, 2))
+                i += 3
+                Dim minute As Integer = Integer.Parse(Mid(str, i + 1, 2))
+                i += 3
+                Dim second As Integer = Integer.Parse(Mid(str, i + 1, 2))
+                i += 3
+                skipChar(str, i)
+                'Dim globalHourOffset As Integer = 0
+                Dim gmt_marker As Boolean = False
+                If i < str.Length Then
+                    Dim marker As String = Mid(str, i + 1, 3)
+                    If String.Equals(marker, "GMT", StringComparison.CurrentCultureIgnoreCase) Then gmt_marker = True
+                    i += 4
+                End If
+                Dim d As New Date(0, If(gmt_marker, DateTimeKind.Utc, DateTimeKind.Unspecified))
+                d = d.AddYears(year - 1).AddMonths(month - 1).AddDays(day - 1)
+                d = d.AddHours(hour).AddMinutes(minute).AddSeconds(second)
+                Return d
             End Function
             ''' <summary>
             ''' 跳过空白字符
@@ -417,7 +361,7 @@ Namespace Utils
             ''' <param name="index">下标</param>
             ''' <remarks></remarks>
             Private Shared Sub skipChar(ByRef str As String, ByRef index As Integer)
-                While str(index) = " "
+                While index < str.Length AndAlso str(index) = " "c
                     index += 1
                 End While
             End Sub
@@ -759,11 +703,11 @@ Namespace Utils
                         End If
                         '追加默认参数
                         Dim keyList As List(Of String) = HTTP_Request.Headers.AllKeys.ToList
-                        If Not keyList.Contains(STR_ACCEPT) Then HTTP_Request.Accept = DEFAULT_ACCEPT
-                        If Not keyList.Contains(STR_ACCEPT_ENCODING) Then HTTP_Request.Headers.Add(STR_ACCEPT_ENCODING, DEFAULT_ACCEPT_ENCODING)
-                        If Not keyList.Contains(STR_ACCEPT_LANGUAGE) Then HTTP_Request.Headers.Add(STR_ACCEPT_LANGUAGE, DEFAULT_ACCEPT_LANGUAGE)
+                        If Not keyList.Contains(STR_ACCEPT) Then HTTP_Request.Accept = Accept
+                        If Not keyList.Contains(STR_ACCEPT_ENCODING) Then HTTP_Request.Headers.Add(STR_ACCEPT_ENCODING, AcceptEncoding)
+                        If Not keyList.Contains(STR_ACCEPT_LANGUAGE) Then HTTP_Request.Headers.Add(STR_ACCEPT_LANGUAGE, AcceptLanguage)
                         If Not keyList.Contains(STR_DATE) Then HTTP_Request.Date = Now
-                        If Not keyList.Contains(STR_USER_AGENT) Then HTTP_Request.UserAgent = DEFAULT_USER_AGENT
+                        If Not keyList.Contains(STR_USER_AGENT) Then HTTP_Request.UserAgent = UserAgent
 
                         'proxy
                         If Proxy IsNot Nothing Then HTTP_Request.Proxy = Proxy

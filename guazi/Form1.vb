@@ -169,6 +169,7 @@ Public Class Form1
         If IO.File.Exists("trace.log") Then IO.File.Delete("trace.log")
         Trace.Listeners.Add(New TextWriterTraceListener("trace.log"))
         Trace.AutoFlush = True
+
         '登陆检测
         If Not CheckLogin() Then
             frmLogin.ShowDialog()

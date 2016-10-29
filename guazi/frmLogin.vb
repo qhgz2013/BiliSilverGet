@@ -4,16 +4,11 @@
 
     '是否使用主站登录，如果使用，则需要输入验证码
     '如果不需要，则使用迷你登录模块，在密码确保不会连续输入错误下，不需输入验证码
-    Private Const USING_MAIN_LOGIN_MODULE As Boolean = False
+    Private Const USING_MAIN_LOGIN_MODULE As Boolean = True
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
         Dim result As Boolean
         Dim result_str As String = ""
-        If USING_MAIN_LOGIN_MODULE Then
-            result = Login(TextBox2.Text, TextBox3.Text, TextBox4.Text, result_str)
-        Else
-            result = LoginBackup(TextBox2.Text, TextBox3.Text, , result_str)
-        End If
-
+        result = Login(TextBox2.Text, TextBox3.Text, TextBox4.Text, result_str)
         If result Then
             'MessageBox.Show("登录成功")
             Me.Hide()
