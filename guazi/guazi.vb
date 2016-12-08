@@ -755,7 +755,25 @@ Public Class guazi
     End Sub
     Private Sub CommentThdCallback()
         If _RoomId <= 0 Then Return
-        Dim ipaddr As IPAddress = Dns.GetHostAddresses(DEFAULT_COMMENT_HOST)(0)
+        Dim cmt_ns As String = ""
+        'get from live
+        Try
+            Dim req = get_request_option()
+            req.HttpGet("http://live.bilibili.com/api/player?id=cid:" & _RoomId & "&ts=" & Microsoft.VisualBasic.Hex(CInt(Others.ToUnixTimestamp(Now))))
+
+            Dim response_str = req.ReadResponseString.Replace(vbCr, "").Replace(vbLf, "")
+            req.Close()
+
+            Dim match As Match = Regex.Match(response_str, "<server>(?<ns>.+)</server>")
+            If match.Success Then cmt_ns = match.Result("${ns}")
+            If (String.IsNullOrEmpty(cmt_ns)) Then Throw New ArgumentNullException("Can not get domain!")
+        Catch ex As Exception
+            RaiseEvent DebugOutput("[ERR]" & ex.ToString)
+            Trace.TraceError(ex.ToString)
+
+        End Try
+
+        Dim ipaddr As IPAddress = Dns.GetHostAddresses(cmt_ns)(0)
         Dim ip_ed As IPEndPoint = New IPEndPoint(ipaddr, DEFAULT_COMMENT_PORT)
 
         _CommentSocket = New Sockets.Socket(Sockets.AddressFamily.InterNetwork, Sockets.SocketType.Stream, Sockets.ProtocolType.Tcp)
