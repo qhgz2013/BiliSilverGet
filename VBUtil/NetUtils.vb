@@ -366,10 +366,10 @@ Namespace Utils
                 End While
             End Sub
 
-            Public Sub New(Optional ByVal useCookie As Boolean = True, Optional ByVal readWriteTimeout As Integer = DEFAULT_READ_WRITE_TIMEOUT, Optional ByVal RetryTimes As Integer = DEFAULT_RETRY_TIMES, Optional ByVal RetryDelay As Integer = DEFAULT_RETRY_DELAY, Optional ByVal proxy As String = DEFAULT_PROXY_URL)
+            Public Sub New(Optional ByVal useCookie As Boolean = True, Optional ByVal Timeout As Integer = DEFAULT_READ_WRITE_TIMEOUT, Optional ByVal RetryTimes As Integer = DEFAULT_RETRY_TIMES, Optional ByVal RetryDelay As Integer = DEFAULT_RETRY_DELAY, Optional ByVal proxy As String = DEFAULT_PROXY_URL)
                 Me.UseCookie = useCookie
-                Me.ReadWriteTimeout = readWriteTimeout
-                Me.Timeout = DEFAULT_TIMEOUT
+                Me.ReadWriteTimeout = DEFAULT_READ_WRITE_TIMEOUT
+                Me.Timeout = Timeout
                 Me.RetryTimes = RetryTimes
                 Me.RetryDelay = RetryDelay
                 If proxy IsNot Nothing AndAlso proxy.Length Then Me.Proxy = New System.Net.WebProxy(proxy)

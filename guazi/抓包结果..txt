@@ -49,9 +49,14 @@ POST的数据:giftId=[道具id]&roomid=[要赠送的房间的id]&ruid=[房间数
 下载视频（录播）
 
 获取下载url:
-HTTP GET: http://live.bilibili.com/api/playurl
+HTTP GET: http://live.bilibili.com/api/playurl?player=1&cid=[房间cid]&quality=0
 返回数据是xml文档
 url在<video> --> <durl> --> <url>里
+
+
+轮播详情:
+HTTP GET: http://live.bilibili.com/live/getRoundPlayVideo?room_id=[房间cid]&a=[随机0-1double]
+注：轮播的视频地址也是在上面得到的
 
 
 挂经验
