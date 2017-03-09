@@ -169,7 +169,7 @@ namespace guazi2
                     lRoomStatus.Text = "轮播中: " + _guazi.RoundTitle;
                 else if (_guazi.LiveStatus == "PREPARING")
                     lRoomStatus.Text = "准备中";
-                //lLiveTime.Left = lRoomStatus.Left + lRoomStatus.Width + 10;
+                lLiveTime.Left = lRoomStatus.Left + lRoomStatus.Width + 10;
             }));
         }
         private void _guazi_ChangeRoomIDCompleted()
@@ -177,6 +177,13 @@ namespace guazi2
             Invoke(new NoArgSTA(delegate
             {
                 tRoomID.Enabled = true;
+                cAutoGrabSilver_CheckedChanged(null, new EventArgs());
+                cAutoGetGift_CheckedChanged(null, new EventArgs());
+                cAutoJoinSmallTV_CheckedChanged(null, new EventArgs());
+                cAutoOnlineHeart_CheckedChanged(null, new EventArgs());
+                cAutoSign_CheckedChanged(null, new EventArgs());
+                cRecord_CheckedChanged(null, new EventArgs());
+                cJoinActivity_CheckedChanged(null, new EventArgs());
             }));
         }
         private void tRoomID_KeyPress(object sender, KeyPressEventArgs e)
@@ -501,6 +508,7 @@ namespace guazi2
             }
             else
                 lLiveTime.Text = "";
+            lLiveTime.Left = lRoomStatus.Left + lRoomStatus.Width + 10;
 
             var runtime_ts = DateTime.Now - _startTime;
             lRunTime.Text = (Math.Floor(runtime_ts.TotalHours).ToString()) + ":" + runtime_ts.Minutes.ToString("0#") + ":" + runtime_ts.Seconds.ToString("0#");

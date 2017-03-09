@@ -181,7 +181,8 @@ Public Class Form1
         gz = New guazi()
         _initflag = True
 
-        gz.RoomURL = bRoomId.Text
+        Integer.TryParse(bRoomId.Text, gz.RoomID)
+        'gz.RoomURL = bRoomId.Text
         goFuck(sender, e)
 
         '弹幕颜色

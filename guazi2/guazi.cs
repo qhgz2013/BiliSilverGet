@@ -312,7 +312,7 @@ namespace guazi2
         {
             _tracer.TraceInfo("StartSilverGrabbing called");
 
-            if (_grabSilverThread == null || _grabSilverThread.ThreadState == ThreadState.Aborted)
+            if (_grabSilverThread == null || (_grabSilverThread.ThreadState & (ThreadState.Aborted | ThreadState.Stopped)) != 0)
             {
                 _grabSilverThread = new Thread(_silverThreadCallback);
                 _grabSilverThread.Name = "瓜子搜刮线程";
@@ -1161,6 +1161,7 @@ namespace guazi2
                             SendComment(content, Color.White);
                         }
                         SpecialGiftRecv?.Invoke(id, num, time, content);
+                        _tracer.TraceInfo("[" + cmd + "]:" + str_json);
                         break;
 
                     default:
@@ -1178,7 +1179,7 @@ namespace guazi2
         {
             _tracer.TraceInfo("StartReceiveComment called");
             _commentThdLock.AcquireWriterLock(Timeout.Infinite);
-            if (_commentParseThd == null || _commentParseThd.ThreadState == ThreadState.Aborted)
+            if (_commentParseThd == null || (_commentParseThd.ThreadState & (ThreadState.Aborted | ThreadState.Stopped)) != 0)
             {
                 _commentParseThd = new Thread(_commentParserThreadCallback);
                 _commentParseThd.Name = "弹幕解析线程";
@@ -1389,7 +1390,7 @@ namespace guazi2
         {
             _tracer.TraceInfo("StartGettingExp called");
 
-            if (_expThread == null || _expThread.ThreadState == ThreadState.Aborted)
+            if (_expThread == null || (_expThread.ThreadState & (ThreadState.Aborted | ThreadState.Stopped)) != 0)
             {
                 _expThread = new Thread(_expThreadCallback);
                 _expThread.Name = "在线经验线程";
@@ -1422,7 +1423,7 @@ namespace guazi2
                 var url1 = "http://live.bilibili.com/eventRoom/index?ruid=" + _roomID;
                 var url2 = "http://live.bilibili.com/eventRoom/heart";
 
-                request.HttpPost(url1, new byte[] { }, "application/json");
+                request.HttpGet(url1);
                 var response = request.ReadResponseString();
                 request.Close();
 
@@ -1471,7 +1472,7 @@ namespace guazi2
         public void StartEventHeartbeat()
         {
             _tracer.TraceInfo("StartEventHeartbeat called");
-            if (_eventThd == null || _eventThd.ThreadState == ThreadState.Aborted)
+            if (_eventThd == null || (_eventThd.ThreadState & (ThreadState.Aborted | ThreadState.Stopped)) != 0)
             {
                 _eventThd = new Thread(_eventThdCallback);
                 _eventThd.IsBackground = true;
@@ -1508,29 +1509,42 @@ namespace guazi2
                 request.Close();
 
                 _roomRoundInfo = JsonConvert.DeserializeObject(response) as JObject;
-                var ct = DateTime.Now;
-                _roomRoundInfoStartTime = (ulong)Others.ToUnixTimestamp(ct - (ct.AddSeconds(_roomRoundInfo["data"].Value<int>("play_time")) - ct));
+                var cid = _roomRoundInfo["data"].Value<int>("cid");
+                if (cid == -2) return;
 
-                if (_roomRoundInfo["data"].Value<int>("aid") == 0) return;
+                if (cid > 0)
+                {
+                    var ct = DateTime.Now;
+                    _roomRoundInfoStartTime = (ulong)Others.ToUnixTimestamp(ct - (ct.AddSeconds(_roomRoundInfo["data"].Value<int>("play_time")) - ct));
 
-                var video_url = _roomRoundInfo["data"].Value<string>("play_url");
-                _tracer.TraceInfo("Getting Round Info (Source Video)");
-                request.HttpGet(video_url);
+                    var video_url = _roomRoundInfo["data"].Value<string>("play_url");
+                    _tracer.TraceInfo("Getting Round Info (Source Video)");
+                    request.HttpGet(video_url);
 
-                response = request.ReadResponseString();
-                if (traceResponseString) _tracer.TraceInfo(response);
-                request.Close();
+                    response = request.ReadResponseString();
+                    if (traceResponseString) _tracer.TraceInfo(response);
+                    request.Close();
 
-                var json = JsonConvert.DeserializeObject(response) as JObject;
-                var timelength = json.Value<int>("timelength");
-                _roundVideoTime = timelength / 1000;
+                    var json = JsonConvert.DeserializeObject(response) as JObject;
+                    var timelength = json.Value<int>("timelength");
+                    _roundVideoTime = timelength / 1000;
+                }
+                else if (cid == -1)
+                {
+                    var ct = DateTime.Now;
+                    var play_time = _roomRoundInfo["data"].Value<int>("play_time");
+                    play_time = 300 - play_time;
+                    _roomRoundInfoStartTime = (ulong)Others.ToUnixTimestamp(ct - (ct.AddSeconds(play_time) - ct));
+                    _roundVideoTime = 300;
+                }
                 //creating another thread to update info
                 var update_roundInfo_thd = new Thread(() =>
                 {
                     _tracer.TraceInfo("updateRoundInfoThd started");
-                    var sleep_time = (int)(Others.FromUnixTimeStamp(_roomRoundInfoStartTime).AddMilliseconds(timelength + 100) - DateTime.Now).TotalMilliseconds;
+                    var sleep_time = (int)(Others.FromUnixTimeStamp(_roomRoundInfoStartTime).AddSeconds(_roundVideoTime) - DateTime.Now).TotalMilliseconds;
                     if (sleep_time > 0) Thread.Sleep(sleep_time);
                     GetRoundInfo();
+                    RoomInfoUpdated?.Invoke();
                     _tracer.TraceInfo("updateRoundInfoThd exited");
                 });
                 update_roundInfo_thd.IsBackground = true;
@@ -1677,6 +1691,7 @@ namespace guazi2
         }
         private void _writeStreamFoot()
         {
+            if (_streamingCommentWriter == null) return;
             _streamingCommentWriter.Write("</i>");
             _streamingCommentWriter.Close();
             _streamingCommentWriter = null;
@@ -1693,7 +1708,7 @@ namespace guazi2
                 _tracer.TraceError(ex.ToString());
             }
 
-            if (/*_streamingCommentWriter == null ||*/ json == null || json.Value<string>("cmd") != "DANMU_MSG") return;
+            if (_streamingCommentWriter == null || json == null || json.Value<string>("cmd") != "DANMU_MSG") return;
             double start_time = (DateTime.Now - _streamingStartTime).TotalSeconds;
             var msg = json["info"].Value<string>(1);
             var msg_cfg = json["info"].Value<JArray>(0);
@@ -1721,7 +1736,7 @@ namespace guazi2
             _tracer.TraceInfo("StartStreaming called");
             _streamingPath = output_path;
             _streamingRecvComment = save_comment;
-            if (_streamingThd == null || _streamingThd.ThreadState == ThreadState.Aborted)
+            if (_streamingThd == null || (_streamingThd.ThreadState & (ThreadState.Aborted | ThreadState.Stopped)) != 0)
             {
                 _streamingThd = new Thread(_StreamThdCallback);
                 _streamingThd.IsBackground = true;
