@@ -323,8 +323,11 @@ namespace guazi2
         public void StopSilverGrabbing()
         {
             _tracer.TraceInfo("StopSilverGrabbing called");
-            _grabSilverThread.Abort();
-            _grabSilverThread.Join();
+            if (_grabSilverThread != null)
+            {
+                _grabSilverThread.Abort();
+                _grabSilverThread.Join();
+            }
             _grabSilverThread = null;
         }
         private void _silverThreadCallback()
@@ -1400,9 +1403,12 @@ namespace guazi2
         }
         public void StopGettingExp()
         {
-            _tracer.TraceInfo("StopSilverGrabbing called");
-            _expThread.Abort();
-            _expThread.Join();
+            _tracer.TraceInfo("StopGettingExp called");
+            if(_expThread != null)
+            {
+                _expThread.Abort();
+                _expThread.Join();
+            }
             _expThread = null;
         }
         #endregion
