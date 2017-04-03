@@ -129,7 +129,7 @@ namespace guazi2
             gr.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
             PointF pt = new PointF(0, 0);
-            SizeF size = new SizeF(_width, _height - _ScrollerWidth);
+            SizeF size = new SizeF(_width - _ScrollerWidth, _height);
 
             foreach (var item in csc)
             {
@@ -138,6 +138,7 @@ namespace guazi2
             }
 
             float height = gr.MeasureString(" |", _defaultFont).Height;
+            height = pt.Y + (pt.X > 0 ? height : 0);
             gr.Dispose();
 
             int int_height = (int)Math.Ceiling(height);
@@ -188,7 +189,7 @@ namespace guazi2
                 gr.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
                 PointF pt = new PointF(0, 0);
-                SizeF size = new SizeF(_width, _height - _ScrollerWidth);
+                SizeF size = new SizeF(_width - _ScrollerWidth, _height);
 
                 foreach (var item in _stringList[i])
                 {
@@ -197,6 +198,7 @@ namespace guazi2
                 }
 
                 float fHeight = gr.MeasureString(" |", _defaultFont).Height;
+                fHeight = pt.Y + (pt.X > 0 ? fHeight : 0);
                 gr.Dispose();
 
                 int int_height = (int)Math.Ceiling(fHeight);

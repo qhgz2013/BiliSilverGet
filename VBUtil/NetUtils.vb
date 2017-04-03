@@ -269,7 +269,7 @@ Namespace Utils
                         i += 1
                         Dim skipflg As Boolean = False
                         If Not arg.ContainsKey("path") Then skipflg = True
-                        Dim c As New Net.Cookie(name, value, arg("path"), If(arg.ContainsKey("domain"), arg("domain"), defaultDomain))
+                        Dim c As New Net.Cookie(name, value, If(arg.ContainsKey("path"), arg("path"), "/"), If(arg.ContainsKey("domain"), arg("domain"), defaultDomain))
                         c.HttpOnly = arg.ContainsKey("httponly")
 
                         If arg.ContainsKey("max-age") Then

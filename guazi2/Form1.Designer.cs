@@ -44,6 +44,7 @@
             this.lUserName = new System.Windows.Forms.Label();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.cRecordSaveComment = new System.Windows.Forms.CheckBox();
             this.lStreamingStat = new System.Windows.Forms.Label();
             this.cRecord = new System.Windows.Forms.CheckBox();
             this.lEventTime = new System.Windows.Forms.Label();
@@ -88,7 +89,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
-            this.cRecordSaveComment = new System.Windows.Forms.CheckBox();
+            this.lblShowCookie = new System.Windows.Forms.LinkLabel();
             this.groupBox1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -124,6 +125,7 @@
             // 
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.lblShowCookie);
             this.groupBox1.Controls.Add(this.lOnlineUser2);
             this.groupBox1.Controls.Add(this.lRoomName);
             this.groupBox1.Controls.Add(this.lLiveTime);
@@ -269,6 +271,16 @@
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "设置";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // cRecordSaveComment
+            // 
+            this.cRecordSaveComment.AutoSize = true;
+            this.cRecordSaveComment.Location = new System.Drawing.Point(6, 209);
+            this.cRecordSaveComment.Name = "cRecordSaveComment";
+            this.cRecordSaveComment.Size = new System.Drawing.Size(111, 21);
+            this.cRecordSaveComment.TabIndex = 6;
+            this.cRecordSaveComment.Text = "录播时保存弹幕";
+            this.cRecordSaveComment.UseVisualStyleBackColor = true;
             // 
             // lStreamingStat
             // 
@@ -700,15 +712,17 @@
             this.timer1.Enabled = true;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
-            // cRecordSaveComment
+            // lblShowCookie
             // 
-            this.cRecordSaveComment.AutoSize = true;
-            this.cRecordSaveComment.Location = new System.Drawing.Point(6, 209);
-            this.cRecordSaveComment.Name = "cRecordSaveComment";
-            this.cRecordSaveComment.Size = new System.Drawing.Size(111, 21);
-            this.cRecordSaveComment.TabIndex = 6;
-            this.cRecordSaveComment.Text = "录播时保存弹幕";
-            this.cRecordSaveComment.UseVisualStyleBackColor = true;
+            this.lblShowCookie.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblShowCookie.AutoSize = true;
+            this.lblShowCookie.Location = new System.Drawing.Point(566, 16);
+            this.lblShowCookie.Name = "lblShowCookie";
+            this.lblShowCookie.Size = new System.Drawing.Size(95, 17);
+            this.lblShowCookie.TabIndex = 6;
+            this.lblShowCookie.TabStop = true;
+            this.lblShowCookie.Text = "查看cookie信息";
+            this.lblShowCookie.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lblShowCookie_LinkClicked);
             // 
             // Form1
             // 
@@ -802,6 +816,7 @@
         private System.Windows.Forms.Label lGRunTime;
         private System.Windows.Forms.Label lRunTime;
         private System.Windows.Forms.CheckBox cRecordSaveComment;
+        private System.Windows.Forms.LinkLabel lblShowCookie;
     }
 }
 

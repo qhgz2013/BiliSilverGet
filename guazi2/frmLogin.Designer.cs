@@ -37,6 +37,7 @@
             this.pCaptcha = new System.Windows.Forms.PictureBox();
             this.bConfirm = new System.Windows.Forms.Button();
             this.bCancel = new System.Windows.Forms.Button();
+            this.lRefreshCaptcha = new System.Windows.Forms.LinkLabel();
             ((System.ComponentModel.ISupportInitialize)(this.pCaptcha)).BeginInit();
             this.SuspendLayout();
             // 
@@ -51,9 +52,9 @@
             // 
             // tUserName
             // 
-            this.tUserName.Location = new System.Drawing.Point(47, 6);
+            this.tUserName.Location = new System.Drawing.Point(59, 6);
             this.tUserName.Name = "tUserName";
-            this.tUserName.Size = new System.Drawing.Size(186, 21);
+            this.tUserName.Size = new System.Drawing.Size(198, 21);
             this.tUserName.TabIndex = 1;
             this.tUserName.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tUserName_KeyPress);
             // 
@@ -68,11 +69,11 @@
             // 
             // tPassword
             // 
-            this.tPassword.Location = new System.Drawing.Point(47, 32);
+            this.tPassword.Location = new System.Drawing.Point(59, 32);
             this.tPassword.Name = "tPassword";
             this.tPassword.PasswordChar = '●';
             this.tPassword.ShortcutsEnabled = false;
-            this.tPassword.Size = new System.Drawing.Size(186, 21);
+            this.tPassword.Size = new System.Drawing.Size(198, 21);
             this.tPassword.TabIndex = 2;
             this.tPassword.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tPassword_KeyPress);
             // 
@@ -87,9 +88,9 @@
             // 
             // tCaptcha
             // 
-            this.tCaptcha.Location = new System.Drawing.Point(149, 59);
+            this.tCaptcha.Location = new System.Drawing.Point(176, 59);
             this.tCaptcha.Name = "tCaptcha";
-            this.tCaptcha.Size = new System.Drawing.Size(84, 21);
+            this.tCaptcha.Size = new System.Drawing.Size(81, 21);
             this.tCaptcha.TabIndex = 3;
             this.tCaptcha.Enter += new System.EventHandler(this.tCaptcha_Enter);
             this.tCaptcha.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tCaptcha_KeyPress);
@@ -98,14 +99,14 @@
             // 
             this.pCaptcha.Location = new System.Drawing.Point(59, 56);
             this.pCaptcha.Name = "pCaptcha";
-            this.pCaptcha.Size = new System.Drawing.Size(80, 37);
+            this.pCaptcha.Size = new System.Drawing.Size(104, 56);
             this.pCaptcha.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pCaptcha.TabIndex = 2;
             this.pCaptcha.TabStop = false;
             // 
             // bConfirm
             // 
-            this.bConfirm.Location = new System.Drawing.Point(55, 100);
+            this.bConfirm.Location = new System.Drawing.Point(75, 118);
             this.bConfirm.Name = "bConfirm";
             this.bConfirm.Size = new System.Drawing.Size(88, 45);
             this.bConfirm.TabIndex = 4;
@@ -115,7 +116,7 @@
             // 
             // bCancel
             // 
-            this.bCancel.Location = new System.Drawing.Point(149, 100);
+            this.bCancel.Location = new System.Drawing.Point(176, 119);
             this.bCancel.Name = "bCancel";
             this.bCancel.Size = new System.Drawing.Size(81, 44);
             this.bCancel.TabIndex = 5;
@@ -123,11 +124,23 @@
             this.bCancel.UseVisualStyleBackColor = true;
             this.bCancel.Click += new System.EventHandler(this.bCancel_Click);
             // 
+            // lRefreshCaptcha
+            // 
+            this.lRefreshCaptcha.AutoSize = true;
+            this.lRefreshCaptcha.Location = new System.Drawing.Point(176, 89);
+            this.lRefreshCaptcha.Name = "lRefreshCaptcha";
+            this.lRefreshCaptcha.Size = new System.Drawing.Size(65, 12);
+            this.lRefreshCaptcha.TabIndex = 6;
+            this.lRefreshCaptcha.TabStop = true;
+            this.lRefreshCaptcha.Text = "刷新验证码";
+            this.lRefreshCaptcha.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lRefreshCaptcha_LinkClicked);
+            // 
             // frmLogin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(241, 153);
+            this.ClientSize = new System.Drawing.Size(269, 175);
+            this.Controls.Add(this.lRefreshCaptcha);
             this.Controls.Add(this.bCancel);
             this.Controls.Add(this.bConfirm);
             this.Controls.Add(this.pCaptcha);
@@ -156,5 +169,6 @@
         private System.Windows.Forms.PictureBox pCaptcha;
         private System.Windows.Forms.Button bConfirm;
         private System.Windows.Forms.Button bCancel;
+        private System.Windows.Forms.LinkLabel lRefreshCaptcha;
     }
 }

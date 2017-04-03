@@ -53,6 +53,7 @@ namespace guazi2
             var param = new Parameters();
             param.Add("act", "login");
             param.Add("userid", userID);
+            param.Add("gourl", "http://www.bilibili.com/");
             param.Add("keeptime", login_time);
             
             var request = new NetStream(Timeout: 15000, RetryTimes: 20);

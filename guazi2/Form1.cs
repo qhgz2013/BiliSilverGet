@@ -22,6 +22,8 @@ namespace guazi2
 
         guazi _guazi;
         commentGraphic _commentGr;
+
+        #region external IO & constructor & destructor
         private void Form1_Load(object sender, EventArgs e)
         {
             VBUtil.Utils.NetUtils.Global.LoadCookie();
@@ -55,6 +57,8 @@ namespace guazi2
 
             _commentGr = new commentGraphic(pCommentOutput.Width, pCommentOutput.Height);
 
+            load_config();
+
             //check cookie
             if (!frmLogin.CheckLoginStatus())
             {
@@ -64,7 +68,6 @@ namespace guazi2
                     Close();
             }
 
-            load_config();
         }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -128,6 +131,7 @@ namespace guazi2
             sw.WriteLine(str_json);
             sw.Close();
         }
+        #endregion
 
         #region Room Info & ID Management
 
@@ -300,7 +304,6 @@ namespace guazi2
         {
             _nextEventTime = time;
         }
-        #endregion
         private void _guazi_WelcomeRecv(string user_name, int uid, int is_admin, int is_vip)
         {
             return;
@@ -338,6 +341,7 @@ namespace guazi2
                 }));
             });
         }
+        #endregion
 
         #region Statistics
         private int _comment_count;
@@ -602,6 +606,12 @@ namespace guazi2
             System.Diagnostics.Debug.Print("Comment Output Resized to: " + pCommentOutput.Width + " x " + pCommentOutput.Height);
             _commentGr.Resize(pCommentOutput.Width, pCommentOutput.Height);
             pCommentOutput.Image = _commentGr.GetImage();
+        }
+
+        private void lblShowCookie_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            var t = new VBUtil.CookieDebugger();
+            t.Show(this);
         }
 
         private void cRecord_CheckedChanged(object sender, EventArgs e)

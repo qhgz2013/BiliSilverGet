@@ -67,9 +67,13 @@ namespace guazi2
                 string login_result;
                 try
                 {
-                    if (api.Login(User_Name, PassWord, Captcha, 1209600, out login_result))
+                    if (api.Login(User_Name, PassWord, Captcha, 2592000, out login_result))
                     {
                         Close();
+                    }
+                    if (login_result.Contains("验证码错误"))
+                    {
+                        pCaptcha.Image = api.GetCaptchaImage();
                     }
                 }
                 catch (Exception ex)
@@ -113,6 +117,11 @@ namespace guazi2
             {
                 pCaptcha.Image = api.GetCaptchaImage();
             }
+        }
+
+        private void lRefreshCaptcha_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            pCaptcha.Image = api.GetCaptchaImage();
         }
     }
 }

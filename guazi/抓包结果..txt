@@ -26,22 +26,22 @@ HTTP GET: http://live.bilibili.com/FreeSilver/getAward?time_start=[宝箱任务�
 签到相关:
 
 签到:
-HTTP GET: http://live.bilibili.com/sign/doSign
+HTTP GET: http://api.live.bilibili.com/sign/doSign
 获取签到状态:
-HTTP GET: http://live.bilibili.com/sign/GetSignInfo
+HTTP GET: http://api.live.bilibili.com/sign/GetSignInfo
 
 
 
 道具相关:
 
 领取每日道具:
-HTTP GET: http://live.bilibili.com/giftBag/sendDaily
+HTTP GET: http://api.live.bilibili.com/giftBag/sendDaily
 
 获取用户道具背包
-HTTP GET: http://live.bilibili.com/gift/playerBag
+HTTP GET: http://api.live.bilibili.com/gift/playerBag
 
 发送道具
-HTTP POST: http://live.bilibili.com/giftBag/send
+HTTP POST: http://api.live.bilibili.com/giftBag/send
 POST的Content-Type: application/x-form-urlencoded
 POST的数据:giftId=[道具id]&roomid=[要赠送的房间的id]&ruid=[房间数据下的MASTERID(见房间数据获取)]&num=[赠送的数量]&coinType=silver&Bag_id=[获取背包道具时该道具的id]&timestamp=[当前unix时间戳]&rnd=[随机数]&token=[Cookie下的LIVE_LOGIN_DATA]
 
@@ -60,11 +60,12 @@ HTTP GET: http://live.bilibili.com/live/getRoundPlayVideo?room_id=[房间cid]&a=
 
 
 挂经验
-HTTP POST: http://live.bilibili.com/User/userOnlineHeart
+HTTP POST: http://api.live.bilibili.com/User/userOnlineHeart
 5分钟发一次，只要post就好了，没有要发送的内容
+注意要使用xhr格式把referer加上
 
 目前的限时活动
-HTTP POST: http://live.bilibili.com/eventRoom/heart
+HTTP POST: http://api.live.bilibili.com/eventRoom/heart
 同上
 
 弹幕发送
@@ -78,10 +79,10 @@ POST的数据:color=[弹幕颜色(rrggbb)]&fontsize=[字体大小]&mode=1&msg=[�
 
 弹幕接收
 
-SOCKET: dm.live.bilibili.com:788
+SOCKET: livecmt-2.bilibili.com:788
 
 (在获取用户播放数据时会给出域名，不过也可以默认这个)
-可以先dns解析 :D, 转为 x.x.x.x:788
+可以先dns解析 :D, 转为 x.x.x.x:x
 
 然后就捣鼓套接字了
 

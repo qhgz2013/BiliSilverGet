@@ -264,7 +264,7 @@ namespace guazi2
             if (roomid > 0)
             {
                 var request = new NetStream();
-                var url = "http://live.bilibili.com/live/getInfo?roomid=" + roomid;
+                var url = "http://api.live.bilibili.com/live/getInfo?roomid=" + roomid;
                 try
                 {
                     request.HttpGet(url);
@@ -506,8 +506,8 @@ namespace guazi2
         private void _signThreadCallback()
         {
             _tracer.TraceInfo("SignThread started");
-            var url = "http://live.bilibili.com/sign/doSign";
-            var info_url = "http://live.bilibili.com/sign/GetSignInfo";
+            var url = "http://api.live.bilibili.com/sign/doSign";
+            var info_url = "http://api.live.bilibili.com/sign/GetSignInfo";
 
             var request = get_request();
             try
@@ -573,8 +573,8 @@ namespace guazi2
         private void _getGiftThreadCallback()
         {
             _tracer.TraceInfo("getGiftThread started");
-            var url1 = "http://live.bilibili.com/giftBag/sendDaily";
-            var url2 = "http://live.bilibili.com/giftBag/getSendGift";
+            var url1 = "http://api.live.bilibili.com/giftBag/sendDaily";
+            var url2 = "http://api.live.bilibili.com/giftBag/getSendGift";
             var request = get_request();
             try
             {
@@ -628,7 +628,7 @@ namespace guazi2
             _tracer.TraceInfo("GetPlayerBag called");
 
             var ret = new List<BagItem>();
-            var url = "http://live.bilibili.com/gift/playerBag";
+            var url = "http://api.live.bilibili.com/gift/playerBag";
             var request = get_request();
             try
             {
@@ -704,7 +704,7 @@ namespace guazi2
             var request = get_request();
             var param = new Parameters();
 
-            var url = "http://live.bilibili.com/giftBag/send";
+            var url = "http://api.live.bilibili.com/giftBag/send";
             //xhr request
             var header_param = new Parameters();
             header_param.Add("X-Requested-With", "XMLHttpRequest");
@@ -1306,7 +1306,7 @@ namespace guazi2
             _tracer.TraceInfo("GetUserInfo called");
             var ret = new UserInfo();
             var request = get_request();
-            var url = "http://live.bilibili.com/User/getUserInfo";
+            var url = "http://api.live.bilibili.com/User/getUserInfo";
             try
             {
                 request.HttpGet(url);
@@ -1355,7 +1355,13 @@ namespace guazi2
             {
                 var next_update_time = DateTime.Now;
                 var request = get_request();
-                var url = "http://live.bilibili.com/User/userOnlineHeart";
+                var url = "http://api.live.bilibili.com/User/userOnlineHeart";
+
+                var xhr_param = new Parameters();
+                xhr_param.Add("X-Requested-With", "XMLHttpRequest");
+                xhr_param.Add("Origin", "http://live.bilibili.com");
+                xhr_param.Add("Referer", "http://live.bilibili.com/" + _roomURL);
+
                 while (true)
                 {
                     int sleep_time = (int)(next_update_time - DateTime.Now).TotalMilliseconds;
@@ -1364,7 +1370,7 @@ namespace guazi2
                     _tracer.TraceInfo("posting online heartbeat");
                     try
                     {
-                        request.HttpPost(url, new byte[] { }, "text/html");
+                        request.HttpPost(url, new byte[] { }, "text/html", xhr_param);
                     }
                     catch (Exception ex)
                     {
@@ -1426,8 +1432,8 @@ namespace guazi2
             {
                 var request = get_request();
                 if (_roomID == 0) throw new ArgumentNullException("Roomid");
-                var url1 = "http://live.bilibili.com/eventRoom/index?ruid=" + _roomID;
-                var url2 = "http://live.bilibili.com/eventRoom/heart";
+                var url1 = "http://api.live.bilibili.com/eventRoom/index?ruid=" + _roomID;
+                var url2 = "http://api.live.bilibili.com/eventRoom/heart";
 
                 request.HttpGet(url1);
                 var response = request.ReadResponseString();
