@@ -227,9 +227,13 @@ namespace guazi2
                 var request = get_request();
                 try
                 {
-                    request.HttpGet(url);
-                    var str = request.ReadResponseString();
-                    request.Close();
+                    string str;
+                    do
+                    {
+                        request.HttpGet(url);
+                        str = request.ReadResponseString();
+                        request.Close();
+                    } while (do_refresh_check(str));
 
                     var match = Regex.Match(str, @"var\s+ROOMID\s+=\s+(\d+);");
                     if (match.Success)
@@ -267,9 +271,13 @@ namespace guazi2
                 var url = "http://api.live.bilibili.com/live/getInfo?roomid=" + roomid;
                 try
                 {
-                    request.HttpGet(url);
-                    var str = request.ReadResponseString();
-                    request.Close();
+                    string str;
+                    do
+                    {
+                        request.HttpGet(url);
+                        str = request.ReadResponseString();
+                        request.Close();
+                    } while (do_refresh_check(str));
                     if (traceResponseString) _tracer.TraceInfo(str);
 
                     return (JObject)JsonConvert.DeserializeObject(str);
@@ -291,6 +299,22 @@ namespace guazi2
         {
             var ct = DateTime.Now;
             return (ct.AddMilliseconds(delta_ms) - ct);
+        }
+        private bool do_refresh_check(string html_content)
+        {
+            var reg = Regex.Match(html_content, "<meta\\shttp-equiv=\"refresh\"\\s*content=\"\\d+;\\s*url='(?<url>[^']+)'\"\\s*>");
+            if (reg.Success)
+            {
+                var url = reg.Result("${url}");
+                _tracer.TraceInfo("Doing refresh fetch, url=" + url);
+                var ns = get_request();
+                ns.HttpGet(url);
+                var response = ns.ReadResponseString();
+                ns.Close();
+                if (traceResponseString) _tracer.TraceInfo(response);
+                return true;
+            }
+            return false;
         }
         #endregion
 
@@ -347,9 +371,13 @@ namespace guazi2
 
                     try
                     {
-                        request.HttpGet(get_new_tasks_url);
-                        var response_str = request.ReadResponseString();
-                        request.Close();
+                        string response_str;
+                        do
+                        {
+                            request.HttpGet(get_new_tasks_url);
+                            response_str = request.ReadResponseString();
+                            request.Close();
+                        } while (do_refresh_check(response_str));
                         if (traceResponseString) _tracer.TraceInfo(response_str);
 
                         json = JsonConvert.DeserializeObject(response_str) as JObject;
@@ -453,9 +481,13 @@ namespace guazi2
                     try
                     {
                         _tracer.TraceInfo("Award requesting");
-                        request.HttpGet(award_url, urlParam: award_param);
-                        var response = request.ReadResponseString();
-                        request.Close();
+                        string response;
+                        do
+                        {
+                            request.HttpGet(award_url, urlParam: award_param);
+                            response = request.ReadResponseString();
+                            request.Close();
+                        } while (do_refresh_check(response));
                         if (traceResponseString) _tracer.TraceInfo(response);
 
                         json = JsonConvert.DeserializeObject(response) as JObject;
@@ -527,10 +559,13 @@ namespace guazi2
                 }
                 //checking sign status
                 _tracer.TraceInfo("Getting sign info");
-                request.HttpGet(info_url);
-                response = request.ReadResponseString();
+                do
+                {
+                    request.HttpGet(info_url);
+                    response = request.ReadResponseString();
+                    request.Close();
+                } while (do_refresh_check(response));
                 if (traceResponseString) _tracer.TraceInfo(response);
-                request.Close();
                 json = JsonConvert.DeserializeObject(response) as JObject;
 
                 code = json.Value<int>("code");
@@ -579,14 +614,21 @@ namespace guazi2
             try
             {
                 _tracer.TraceInfo("Getting daily gift");
-                request.HttpGet(url1);
-                var response = request.ReadResponseString();
-                request.Close();
+                string response;
+                do
+                {
+                    request.HttpGet(url1);
+                    response = request.ReadResponseString();
+                    request.Close();
+                } while (do_refresh_check(response));
                 if (traceResponseString) _tracer.TraceInfo(response);
 
-                request.HttpGet(url2);
-                response = request.ReadResponseString();
-                request.Close();
+                do
+                {
+                    request.HttpGet(url2);
+                    response = request.ReadResponseString();
+                    request.Close();
+                } while (do_refresh_check(response));
                 if (traceResponseString) _tracer.TraceInfo(response);
 
                 GetDailyGiftSucceeded?.Invoke();
@@ -633,9 +675,13 @@ namespace guazi2
             try
             {
                 _tracer.TraceInfo("Getting player bag");
-                request.HttpGet(url);
-                var response = request.ReadResponseString();
-                request.Close();
+                string response;
+                do
+                {
+                    request.HttpGet(url);
+                    response = request.ReadResponseString();
+                    request.Close();
+                } while (do_refresh_check(response));
 
                 if (traceResponseString) _tracer.TraceInfo(response);
 
@@ -724,9 +770,14 @@ namespace guazi2
             try
             {
                 _tracer.TraceInfo("Posting sending info");
-                request.HttpPost(url, param, headerParam: header_param);
+                string result;
+                do
+                {
+                    request.HttpPost(url, param, headerParam: header_param);
+                    result = request.ReadResponseString();
+                    request.Close();
+                } while (do_refresh_check(result));
 
-                var result = request.ReadResponseString();
                 if (traceResponseString) _tracer.TraceInfo(result);
 
                 var json = JsonConvert.DeserializeObject(result) as JObject;
@@ -827,9 +878,13 @@ namespace guazi2
                     int port = 0;
                     try
                     {
-                        request.HttpGet(url);
-                        var response = request.ReadResponseString();
-                        request.Close();
+                        string response;
+                        do
+                        {
+                            request.HttpGet(url);
+                            response = request.ReadResponseString();
+                            request.Close();
+                        } while (do_refresh_check(response));
                         if (traceResponseString) _tracer.TraceInfo(response);
 
                         string server_address = "";
@@ -1218,10 +1273,13 @@ namespace guazi2
                 try
                 {
                     var url = "http://live.bilibili.com/msg/send";
-                    request.HttpPost(url, post_param);
-
-                    var response = request.ReadResponseString();
-                    request.Close();
+                    string response;
+                    do
+                    {
+                        request.HttpPost(url, post_param);
+                        response = request.ReadResponseString();
+                        request.Close();
+                    } while (do_refresh_check(response));
                     if (traceResponseString) _tracer.TraceInfo(response);
 
                     var json = JsonConvert.DeserializeObject(response) as JObject;
@@ -1253,10 +1311,14 @@ namespace guazi2
             var request = get_request();
             try
             {
-                request.HttpGet(url);
-                var response = request.ReadResponseString();
+                string response;
+                do
+                {
+                    request.HttpGet(url);
+                    response = request.ReadResponseString();
+                    request.Close();
+                } while (do_refresh_check(response));
                 if (traceResponseString) _tracer.TraceInfo(response);
-                request.Close();
 
                 var json = JsonConvert.DeserializeObject(response) as JObject;
                 int code = json.Value<int>("code");
@@ -1309,10 +1371,14 @@ namespace guazi2
             var url = "http://api.live.bilibili.com/User/getUserInfo";
             try
             {
-                request.HttpGet(url);
-                var response = request.ReadResponseString();
+                string response;
+                do
+                {
+                    request.HttpGet(url);
+                    response = request.ReadResponseString();
+                    request.Close();
+                } while (do_refresh_check(response));
                 if (traceResponseString) _tracer.TraceInfo(response);
-                request.Close();
 
                 var json = JsonConvert.DeserializeObject(response) as JObject;
                 ret.currentExp = json["data"].Value<int>("user_intimacy");
@@ -1368,18 +1434,22 @@ namespace guazi2
                     if (sleep_time > 0) Thread.Sleep(sleep_time);
 
                     _tracer.TraceInfo("posting online heartbeat");
-                    try
+                    string response = string.Empty;
+                    do
                     {
-                        request.HttpPost(url, new byte[] { }, "text/html", xhr_param);
-                    }
-                    catch (Exception ex)
-                    {
-                        _tracer.TraceError(ex.ToString());
-                        continue;
-                    }
-                    var response = request.ReadResponseString();
+                        try
+                        {
+                            request.HttpPost(url, new byte[] { }, "text/html", xhr_param);
+                        }
+                        catch (Exception ex)
+                        {
+                            _tracer.TraceError(ex.ToString());
+                            continue;
+                        }
+                        response = request.ReadResponseString();
+                        request.Close();
+                    } while (do_refresh_check(response));
                     if (traceResponseString) _tracer.TraceInfo(response);
-                    request.Close();
 
                     UserHeartbeated?.Invoke();
                     UserInfoUpdated?.Invoke();
@@ -1461,10 +1531,12 @@ namespace guazi2
                         NextEventHeartTimeUpdated?.Invoke(DateTime.Now.AddMilliseconds(heartTime));
                         Thread.Sleep(heartTime);
                     }
-                    //todo: + xhr req
-                    request.HttpPost(url2, roomid, headerParam: xhr_param);
-                    response = request.ReadResponseString();
-                    request.Close();
+                    do
+                    {
+                        request.HttpPost(url2, roomid, headerParam: xhr_param);
+                        response = request.ReadResponseString();
+                        request.Close();
+                    } while (do_refresh_check(response));
 
                     if (traceResponseString) _tracer.TraceInfo(response);
                     json = JsonConvert.DeserializeObject(response) as JObject;
@@ -1515,10 +1587,14 @@ namespace guazi2
             try
             {
                 _tracer.TraceInfo("Getting Round Info");
-                request.HttpGet(url);
-                var response = request.ReadResponseString();
+                string response;
+                do
+                {
+                    request.HttpGet(url);
+                    response = request.ReadResponseString();
+                    request.Close();
+                } while (do_refresh_check(response));
                 if (traceResponseString) _tracer.TraceInfo(response);
-                request.Close();
 
                 _roomRoundInfo = JsonConvert.DeserializeObject(response) as JObject;
                 var cid = _roomRoundInfo["data"].Value<int>("cid");
@@ -1598,10 +1674,14 @@ namespace guazi2
                         //获取下载的url
                         _tracer.TraceInfo("Getting streaming url");
                         var url = "http://live.bilibili.com/api/playurl?player=1&cid=" + _roomID + "&quality=0";
-                        request.HttpGet(url);
-                        var response = request.ReadResponseString();
+                        string response;
+                        do
+                        {
+                            request.HttpGet(url);
+                            response = request.ReadResponseString();
+                            request.Close();
+                        } while (do_refresh_check(response));
                         if (traceResponseString) _tracer.TraceInfo(response);
-                        request.Close();
 
                         var xml_doc = new System.Xml.XmlDocument();
                         xml_doc.LoadXml(response);
