@@ -26,16 +26,22 @@ namespace guazi2
         private int _roomURL;
         //房间信息
         private JObject _roomInfo;
+        //轮播信息的获取时间（用来计算下一次更新轮播信息）
         private ulong _roomRoundInfoStartTime;
+        //轮播信息
         private JObject _roomRoundInfo;
         //房间号映射
         private Dictionary<int, int> _roomMapping;
 
+        //一个简单的多线程Trace
         private Tracer _tracer;
+        //记录API调用结果
         private bool traceResponseString = true;
+        //记录房间弹幕Socket数据
         private bool traceSocketData = false;
-
+        //房间状态从直播到准备时的时间（也是用来更新轮播信息的）
         private DateTime _prepareStartTime;
+        //轮播视频时长
         private int _roundVideoTime;
         #endregion
 
@@ -43,59 +49,68 @@ namespace guazi2
         public event NoArgumentDelegation RoomInfoUpdated;
         public guazi(int roomURL = 0)
         {
-            _tracer = new Tracer();
+            _tracer = new Tracer("trace.log");
             _roomMapping = new Dictionary<int, int>();
             _commentThdLock = new ReaderWriterLock();
 
             _roomURL = roomURL;
             if (_roomURL > 0)
             {
-                _tracer.TraceInfo("Getting room id #" + _roomURL);
                 _roomID = get_roomid(_roomURL);
             }
 
             if (_roomID > 0)
             {
-                _tracer.TraceInfo("Getting room info #" + _roomURL + "(" + _roomID + ")");
                 _roomInfo = get_roomInfo(_roomID);
                 RoomInfoUpdated?.Invoke();
             }
         }
+        //完成房间ID变更后触发的事件
         public event NoArgumentDelegation ChangeRoomIDCompleted;
+        /// <summary>
+        /// 改变房间的ID
+        /// </summary>
+        /// <param name="newRoomURL">新的id（支持id和cid）</param>
         public void ChangeRoomURL(int newRoomURL)
         {
-            //stopping current thread
+            _tracer.TraceInfo("ChangeRoomURL called: int newRoomURL=" + newRoomURL);
+            //停止当前与房间有关的线程
             var continue_receive_comment = _commentParseThd != null;
             StopReceiveComment();
             if (_commentParseThd != null) _commentParseThd.Join();
 
+            //var continue_streaming = _streamingThd != null;
+            StopStreaming();
+
+            //重新获取id及房间信息
             _roomURL = newRoomURL;
             if (_roomURL > 0)
-            {
-                _tracer.TraceInfo("Getting room id #" + _roomURL);
                 _roomID = get_roomid(_roomURL);
-            }
 
             if (_roomID > 0)
-            {
-                _tracer.TraceInfo("Getting room info #" + _roomURL + "(" + _roomID + ")");
                 _roomInfo = get_roomInfo(_roomID);
-            }
 
+            //继续接收弹幕
             if (continue_receive_comment)
                 StartReceiveComment();
 
+            //更新轮播信息
             if (LiveStatus == "ROUND")
                 GetRoundInfo();
             else
+            {
                 _roomRoundInfo = null;
+                _roomRoundInfoStartTime = 0;
+                _prepareStartTime = DateTime.MinValue;
+                _roundVideoTime = 0;
+            }
 
             ChangeRoomIDCompleted?.Invoke();
             RoomInfoUpdated?.Invoke();
         }
 
         #region Properties
-        //global
+        //直播间标题
         public string RoomTitle
         {
             get
@@ -104,6 +119,7 @@ namespace guazi2
                 return _roomInfo["data"].Value<string>("ROOMTITLE");
             }
         }
+        //UP主名称
         public string AnchorName
         {
             get
@@ -112,6 +128,7 @@ namespace guazi2
                 return _roomInfo["data"].Value<string>("ANCHOR_NICK_NAME");
             }
         }
+        //直播间状态
         public string LiveStatus
         {
             get
@@ -120,6 +137,7 @@ namespace guazi2
                 return _roomInfo["data"].Value<string>("LIVE_STATUS");
             }
         }
+        //直播/轮播开始的Unix时间戳
         public ulong LiveTimelineUnixTS
         {
             get
@@ -132,7 +150,7 @@ namespace guazi2
                 return 0;
             }
         }
-
+        //直播/轮播开始的DateTime
         public DateTime LiveTimeline
         {
             get
@@ -140,6 +158,7 @@ namespace guazi2
                 return Others.FromUnixTimeStamp(LiveTimelineUnixTS);
             }
         }
+        //房间ID
         public int RoomID
         {
             get
@@ -147,6 +166,7 @@ namespace guazi2
                 return _roomURL;
             }
         }
+        //房间CID
         public int RoomCID
         {
             get
@@ -154,14 +174,17 @@ namespace guazi2
                 return _roomID;
             }
         }
+        //是否轮播
         public bool RoundLiving
         {
             get
             {
                 if (_roomInfo == null) return false;
-                return _roomInfo["data"].Value<int>("ROUND_STATUS") == 1;
+                //return _roomInfo["data"].Value<int>("ROUND_STATUS") == 1;
+                return LiveStatus == "ROUND";
             }
         }
+        //封面url
         public string CoverImageURL
         {
             get
@@ -170,6 +193,7 @@ namespace guazi2
                 return _roomInfo["data"].Value<string>("COVER");
             }
         }
+        //粉丝数
         public int FansCount
         {
             get
@@ -178,6 +202,7 @@ namespace guazi2
                 return _roomInfo["data"].Value<int>("FANS_COUNT");
             }
         }
+        //轮播视频标题
         public string RoundTitle
         {
             get
@@ -186,7 +211,7 @@ namespace guazi2
                 return _roomRoundInfo["data"].Value<string>("title");
             }
         }
-        //silver
+        //下一次瓜子获取的数量
         public int NextGrabSilverCount
         {
             get
@@ -194,6 +219,7 @@ namespace guazi2
                 return _silver;
             }
         }
+        //下一次瓜子获取的时间
         public DateTime NextGrabSilverTime
         {
             get
@@ -206,21 +232,24 @@ namespace guazi2
 
 
         #region util functions
+        //以默认的参数获取http请求（Timeout为15s，重试20次，间隔300ms）
         private NetStream get_request()
         {
             return new NetStream(Timeout: 15000, RetryTimes: 20, RetryDelay: 300);
         }
         public delegate void NoArgumentDelegation();
-        //获取房间ID [no throw]
+        //获取房间ID（异常时返回0）
         private int get_roomid(int roomURL)
         {
-            _tracer.TraceInfo("get_roomid called");
+            _tracer.TraceInfo("get_roomid called: int roomURL=" + roomURL);
+            //从内存中返回
             if (_roomMapping.ContainsKey(roomURL))
             {
                 _tracer.TraceInfo("Returned RoomID using Memory Mapping: " + _roomURL + " => " + _roomMapping[_roomURL]);
                 return _roomMapping[roomURL];
             }
 
+            //从网页上获取
             if (roomURL > 0)
             {
                 var url = "http://live.bilibili.com/" + roomURL;
@@ -239,7 +268,7 @@ namespace guazi2
                     if (match.Success)
                     {
                         int id = int.Parse(match.Result("$1"));
-                        _tracer.TraceInfo("Returned RoomID from Internet: " + _roomURL + " => " + id);
+                        _tracer.TraceInfo("Returned RoomID from HTML: " + _roomURL + " => " + id);
                         if (traceResponseString) _tracer.TraceInfo(str);
                         _roomMapping.Add(roomURL, id);
                         return id;
@@ -253,18 +282,16 @@ namespace guazi2
                 }
                 catch (Exception ex)
                 {
-                    _tracer.TraceError("params: roomURL=" + roomURL);
                     _tracer.TraceError(ex.ToString());
                     return 0;
                 }
             }
             return 0;
         }
-        //获取房间信息 [no throw]
+        //获取房间信息（异常时返回null）
         private JObject get_roomInfo(int roomid)
         {
-            _tracer.TraceInfo("get_roomInfo called");
-            _roomInfo = null;
+            _tracer.TraceInfo("get_roomInfo called: int roomid=" + roomid);
             if (roomid > 0)
             {
                 var request = new NetStream();
@@ -291,15 +318,18 @@ namespace guazi2
             }
             return null;
         }
+        //获取当前的unix时间戳
         private ulong get_timestamp()
         {
             return (ulong)Others.ToUnixTimestamp(DateTime.Now);
         }
+        //从ms转TimeSpan
         private TimeSpan get_timespan(int delta_ms)
         {
             var ct = DateTime.Now;
             return (ct.AddMilliseconds(delta_ms) - ct);
         }
+        //网页重定向检查
         private bool do_refresh_check(string html_content)
         {
             var reg = Regex.Match(html_content, "<meta\\shttp-equiv=\"refresh\"\\s*content=\"\\d+;\\s*url='(?<url>[^']+)'\"\\s*>");
@@ -320,21 +350,28 @@ namespace guazi2
 
 
         #region Grab silver area
+        //搜刮线程
         private Thread _grabSilverThread;
-        private uint _grabsilverTimeStart, _grabSilverTimeEnd;
+        //开始时间和结束时间（unix + DateTime）
+        private ulong _grabsilverTimeStart, _grabSilverTimeEnd;
         private DateTime _dGrabSilverTimeStart, _dGrabSilverTimeEnd;
+        //当前领取的瓜子数
         private int _silver;
         public delegate void NextSilverUpdateHandler(DateTime time, int silver);
+        //开启新的瓜子宝箱的事件
         public event NextSilverUpdateHandler NextSilverUpdate;
+        //搜刮线程开始及停止的事件
         public event NoArgumentDelegation SilverGrabStarted, SilverGrabStopped;
         public delegate void GrabSilverResultHandler(int get_silver, int total_silver);
+        //领取瓜子成功时触发的事件
         public event GrabSilverResultHandler SilverGrabSucceeded;
+        //领取瓜子失败时触发的事件
         public event NoArgumentDelegation SilverGrabFailed;
 
-
+        //开始异步搜刮瓜子
         public void StartSilverGrabbing()
         {
-            _tracer.TraceInfo("StartSilverGrabbing called");
+            _tracer.TraceInfo("StartSilverGrabbing called: void");
 
             if (_grabSilverThread == null || (_grabSilverThread.ThreadState & (ThreadState.Aborted | ThreadState.Stopped)) != 0)
             {
@@ -344,9 +381,10 @@ namespace guazi2
                 _grabSilverThread.Start();
             }
         }
+        //停止异步搜刮瓜子
         public void StopSilverGrabbing()
         {
-            _tracer.TraceInfo("StopSilverGrabbing called");
+            _tracer.TraceInfo("StopSilverGrabbing called: void");
             if (_grabSilverThread != null)
             {
                 _grabSilverThread.Abort();
@@ -354,6 +392,7 @@ namespace guazi2
             }
             _grabSilverThread = null;
         }
+        //线程调用的函数
         private void _silverThreadCallback()
         {
             _tracer.TraceInfo("SilverThread started");
@@ -363,7 +402,7 @@ namespace guazi2
             {
                 while (true)
                 {
-                    //getting new tasks
+                    //获取新的瓜子宝箱
                     var get_new_tasks_url = "http://live.bilibili.com/FreeSilver/getCurrentTask";
                     var request = get_request();
                     _tracer.TraceInfo("Getting new silver task");
@@ -395,7 +434,7 @@ namespace guazi2
                             throw new Exception("Unknown code: " + code);
                         }
 
-                        //time calculation
+                        //时间计算
                         int minutes = json["data"].Value<int>("minute");
                         _silver = json["data"].Value<int>("silver");
                         _grabsilverTimeStart = json["data"].Value<uint>("time_start");
@@ -406,7 +445,7 @@ namespace guazi2
 
                         NextSilverUpdate?.Invoke(_dGrabSilverTimeEnd, _silver);
 
-                        //thread sleep
+                        //睡眠
                         int sleep_time = (int)(_dGrabSilverTimeEnd - DateTime.Now).TotalMilliseconds;
                         if (sleep_time > 0) Thread.Sleep(sleep_time);
                     }
@@ -420,7 +459,7 @@ namespace guazi2
 
 
 
-                    //captcha
+                    //验证码
                     Image captcha = null;
                     int ocr_count = 0;
                     int captcha_result = -1;
@@ -471,7 +510,7 @@ namespace guazi2
                     } while (captcha_result == -1);
 
 
-                    //award requesting
+                    //领取宝箱
                     var award_url = "http://live.bilibili.com/FreeSilver/getAward";
                     var award_param = new Parameters();
                     award_param.Add("time_start", _grabsilverTimeStart);
@@ -532,9 +571,13 @@ namespace guazi2
 
         #region Sign
         public delegate void SignStatusHandler(int hadSignDays);
+        //签到成功触发的事件
         public event SignStatusHandler SignSucceeded;
+        //签到失败触发的事件
         public event NoArgumentDelegation SignFailed;
+        //签到线程
         private Thread _signThread;
+        //签到线程回调函数
         private void _signThreadCallback()
         {
             _tracer.TraceInfo("SignThread started");
@@ -557,28 +600,32 @@ namespace guazi2
                 {
                     SignFailed?.Invoke();
                 }
-                //checking sign status
-                _tracer.TraceInfo("Getting sign info");
-                do
-                {
-                    request.HttpGet(info_url);
-                    response = request.ReadResponseString();
-                    request.Close();
-                } while (do_refresh_check(response));
-                if (traceResponseString) _tracer.TraceInfo(response);
-                json = JsonConvert.DeserializeObject(response) as JObject;
-
-                code = json.Value<int>("code");
-                if (code == 0)
-                {
-                    int hadSignDays = json["data"].Value<int>("hadSignDays");
-                    SignSucceeded?.Invoke(hadSignDays);
-                    UserInfoUpdated?.Invoke();
-                }
                 else
                 {
-                    _tracer.TraceWarning("Failed to get sign status");
-                    SignSucceeded?.Invoke(-1);
+                    //checking sign status
+                    _tracer.TraceInfo("Getting sign info");
+                    do
+                    {
+                        request.HttpGet(info_url);
+                        response = request.ReadResponseString();
+                        request.Close();
+                    } while (do_refresh_check(response));
+                    if (traceResponseString) _tracer.TraceInfo(response);
+                    json = JsonConvert.DeserializeObject(response) as JObject;
+
+                    code = json.Value<int>("code");
+                    if (code == 0)
+                    {
+                        int hadSignDays = json["data"].Value<int>("hadSignDays");
+                        SignSucceeded?.Invoke(hadSignDays);
+                    }
+                    else
+                    {
+                        _tracer.TraceWarning("Failed to get sign status");
+                        SignSucceeded?.Invoke(-1);
+                    }
+                    UserInfoUpdated?.Invoke();
+                    
                 }
             }
             catch (Exception ex)
@@ -602,7 +649,9 @@ namespace guazi2
 
 
         #region Gift & Bag
+        //成功获取每日礼物
         public event NoArgumentDelegation GetDailyGiftSucceeded;
+        //获取每日礼物失败
         public event NoArgumentDelegation GetDailyGiftFailed;
         private Thread _getGiftThread;
         private void _getGiftThreadCallback()
@@ -653,18 +702,26 @@ namespace guazi2
         [Serializable]
         public struct BagItem
         {
+            //礼物种类ID
             public int gift_id;
+            //数量
             public int gift_num;
+            //另外一个ID，类似于token
             public int bag_id;
+            //有效期
             public string expire_at;
+            //礼物类型
             public string gift_type;
+            //名称
             public string gift_name;
+            //价格
             public string gift_price;
             public BagItem(int _gift_id, int _gift_num, int _bag_id, string _expire_at, string _gift_type, string _gift_name, string _gift_price)
             {
                 gift_id = _gift_id; gift_num = _gift_num; bag_id = _bag_id; expire_at = _expire_at; gift_type = _gift_type; gift_name = _gift_name; gift_price = _gift_price;
             }
         }
+        //获取背包的所有道具
         public BagItem[] GetPlayerBag()
         {
             _tracer.TraceInfo("GetPlayerBag called");
@@ -708,11 +765,14 @@ namespace guazi2
         }
 
         public delegate void SendGiftSucceedHandler(string gift_name, int gift_id, int gift_num, int gift_price);
+        //送出道具成功
         public event SendGiftSucceedHandler SendGiftSucceeded;
+        //送出道具失败
         public event NoArgumentDelegation SendGiftFailed;
+        //送出所有道具（异步）
         public void SendAllItem()
         {
-            _tracer.TraceInfo("SendAllItem called");
+            _tracer.TraceInfo("SendAllItem called: void");
             ThreadPool.QueueUserWorkItem((object obj) =>
             {
                 _tracer.TraceInfo("SendAllItemThread started");
@@ -727,9 +787,10 @@ namespace guazi2
                 _tracer.TraceInfo("SendAllItemThread exited");
             });
         }
+        //送出指定道具（只要设置gift_id, bag_id, gift_num三个属性就行）
         public void SendItem(BagItem item)
         {
-            _tracer.TraceInfo("SendItem called");
+            _tracer.TraceInfo("SendItem called: BagItem item");
             if (_roomInfo == null) return;
             try
             {
@@ -742,10 +803,11 @@ namespace guazi2
                 _tracer.TraceError(ex.ToString());
             }
         }
+        //送出道具（全手动指定参数）
         public void SendItemRaw(int gift_id, int bag_id, int gift_num, int room_id, int master_id, string token)
         {
-            _tracer.TraceInfo("SendItemRaw called");
-            if (room_id <= 0) return;
+            _tracer.TraceInfo("SendItemRaw called: int gift_id=" + gift_id + ", int bag_id=" + bag_id + ", int gift_num=" + gift_num + ", room_id=" + room_id + ", master_id=" + master_id + ", token=" + token);
+            if (room_id <= 0 || gift_id <= 0 || gift_num <= 0 || master_id <= 0 || string.IsNullOrEmpty(token)) return;
 
             var request = get_request();
             var param = new Parameters();
@@ -805,10 +867,14 @@ namespace guazi2
 
 
         #region Comment
+        //主弹幕接收线程
         private Thread _commentParseThd;
-        private Thread _commentHeartbeatThd; //controlled by _commentParseThd
+        //弹幕心跳线程（由主弹幕线程控制）
+        private Thread _commentHeartbeatThd;
+        //接收弹幕的socket
         private Socket _commentSocket;
 
+        //开始/结束接收弹幕的事件
         public event NoArgumentDelegation CommentReceiveStarted, CommentReceiveStopped;
 
         //private MemoryStream _commentPool;
@@ -868,8 +934,10 @@ namespace guazi2
             _tracer.TraceInfo("commentParserThread started");
             try
             {
+                //用于失败重连的循环
                 while (_roomID > 0)
                 {
+                    //从api返回值中获取ip和port
                     _tracer.TraceInfo("Getting comment server domain from Internet");
                     var request = get_request();
                     var url = "http://live.bilibili.com/api/player?id=cid:" + _roomID;
@@ -1023,6 +1091,7 @@ namespace guazi2
             _tracer.TraceInfo("commentParserThread exited");
         }
 
+        //解析从socket接收到的数据
         private void _parseSocketData(byte[] data, int length)
         {
             var ms = new MemoryStream(length);
@@ -1057,21 +1126,29 @@ namespace guazi2
             ms.Close();
         }
         public delegate void StringArgumentDelegation(string arg);
-
         public delegate void OnlineUserUpdateHandler(uint user_count);
         public delegate void MessageReceiveHandler(string user_name, string comment, int color, int user_level, string medal_name, int medal_level, string title_name, bool is_vip);
         public delegate void GiftReceiveHandler(string user_name, string gift_name, int gift_num, int gift_id, int price);
         public delegate void WelcomeReceiveHandler(string user_name, int uid, int is_admin, int is_vip);
         public delegate void WelcomeGuardReceiveHandler(string user_name, int uid, int guard_level);
         public delegate void SpecialGiftReceiveHandler(int id, int num, int time, string content);
+        //解析到在线用户时的事件
         public event OnlineUserUpdateHandler OnlineUserUpdate;
+        //接收到弹幕
         public event MessageReceiveHandler MessageRecv;
+        //接收到礼物
         public event GiftReceiveHandler GiftRecv;
+        //接收到屏蔽消息/系统消息/系统礼物消息
         public event StringArgumentDelegation RoomBlockMsgRecv, SysMsgRecv, SysGiftRecv;
+        //接收到欢迎老爷的消息
         public event WelcomeReceiveHandler WelcomeRecv;
+        //接收到舰长称号的消息
         public event WelcomeGuardReceiveHandler WelcomeGuardRecv;
+        //直播间状态更新
         public event NoArgumentDelegation LiveRecv, PreparingRecv;
+        //特别礼物消息
         public event SpecialGiftReceiveHandler SpecialGiftRecv;
+        //接收到json格式的内容（非在线人数）
         public event StringArgumentDelegation JsonCommentRecv;
 
         private ReaderWriterLock _commentThdLock;
@@ -1088,6 +1165,7 @@ namespace guazi2
 
                 switch (cmd)
                 {
+                    //弹幕消息
                     case "DANMU_MSG":
                         JArray comment_info = json["info"][0] as JArray;
                         string comment = json["info"].Value<string>(1);
@@ -1170,12 +1248,14 @@ namespace guazi2
                         _prepareStartTime = DateTime.Now;
                         UpdateRoomInfo();
                         PreparingRecv?.Invoke();
+                        RoomInfoUpdated?.Invoke();
                         break;
 
                     case "LIVE":
                         _prepareStartTime = DateTime.MinValue;
                         UpdateRoomInfo();
                         LiveRecv?.Invoke();
+                        RoomInfoUpdated?.Invoke();
                         break;
 
                     case "BET_START":
@@ -1524,7 +1604,7 @@ namespace guazi2
 
                 heartTime *= 1000;
                 bool can_continue = json["data"].Value<bool>("heart");
-                do
+                while (can_continue)
                 {
                     if (heartTime > 0)
                     {
@@ -1543,7 +1623,7 @@ namespace guazi2
 
                     can_continue = json["data"].Value<bool>("heart");
 
-                } while (can_continue);
+                }
             }
             catch (ThreadAbortException) { }
             catch (Exception ex)

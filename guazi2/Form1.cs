@@ -49,6 +49,7 @@ namespace guazi2
             _guazi.StreamingSpeedUpdated += _guazi_StreamingSpeedUpdated;
             _guazi.RoomInfoUpdated += _guazi_RoomInfoUpdated;
             _guazi.StreamingStopped += _guazi_StreamingStopped;
+            _guazi.UserHeartbeated += _guazi_UserHeartbeated;
 
             pCommentOutput.MouseWheel += PCommentOutput_MouseWheel;
 
@@ -167,6 +168,7 @@ namespace guazi2
         {
             Invoke(new NoArgSTA(delegate
             {
+                lRoomName.Text = _guazi.RoomTitle;
                 if (_guazi.LiveStatus == "LIVE")
                     lRoomStatus.Text = "直播中";
                 else if (_guazi.LiveStatus == "ROUND")
@@ -239,6 +241,13 @@ namespace guazi2
         #endregion
 
         #region Event Callback
+        private void _guazi_UserHeartbeated()
+        {
+            Invoke(new NoArgSTA(delegate
+            {
+                bRefreshBag.PerformClick();
+            }));
+        }
         private void _guazi_RoomBlockMsgRecv(string arg)
         {
             var csc = new ColorStringCollection();

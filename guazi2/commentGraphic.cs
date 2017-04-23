@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
@@ -12,59 +13,97 @@ namespace guazi2
     public class commentGraphic
     {
         private int _width, _height;
-        private bool _autoScroll;
-        private long _currentHeight;
-        private long _totalHeight;
+        private int _currentIndex; // -1=auto, others are in the list
+        private float _currentOffset;
+        private double _totalHeight;
+        private double _currentHeight;
+
         private const int _max_item_count = 1000;
+        private float _singleLineHeight;
+        //private SizeF _size;
         public commentGraphic(int width, int height)
         {
+            if (width < 1 || height < 1) throw new ArgumentException("Invalid width/height");
             _width = width; _height = height;
-            _totalHeight = 0;
-            _autoScroll = true;
-            _imgCacheList = new List<Image>();
+            //_size = new SizeF(_width, _height);
+            _currentIndex = -1;
+            _currentHeight = -_height;
             _stringList = new List<ColorStringCollection>();
+            _heightList = new List<float>();
+            var bm = new Bitmap(1, 1);
+            var gr = Graphics.FromImage(bm);
+            _singleLineHeight = gr.MeasureString("_|", _defaultFont).Height;
+            gr.Dispose();
+            bm.Dispose();
         }
-        private List<Image> _imgCacheList;
+        private List<float> _heightList;
         private List<ColorStringCollection> _stringList;
-        private Color _commentTag = Color.Orange;
         private Font _defaultFont = new Font("微软雅黑", 10);
         private int _ScrollerWidth = 5;
         public void Clear()
         {
-            _imgCacheList.Clear();
+            _heightList.Clear();
             _stringList.Clear();
             _totalHeight = 0;
-            _autoScroll = true;
+            _currentIndex = -1;
+            _currentHeight = -_height;
         }
         public Image GetImage()
         {
+            //timing starts
+            var sw = new Stopwatch();
+            sw.Start();
+
             var bmp = new Bitmap(_width, _height);
-            var gr = Graphics.FromImage(bmp);
-
-            long height = _totalHeight - 1;
-            if (_autoScroll)
-                _currentHeight = _totalHeight - _height;
-
-            for (int i = _imgCacheList.Count - 1; i >= 0; i--)
+            var size = new SizeF(_width - _ScrollerWidth, _height);
+            if (_stringList.Count > 0)
             {
-                var cur_img = _imgCacheList[i];
-                height -= cur_img.Height;
+                var gr = Graphics.FromImage(bmp);
+                gr.CompositingQuality = CompositingQuality.HighQuality;
+                gr.SmoothingMode = SmoothingMode.HighQuality;
+                gr.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
-                if (height > _currentHeight + _height) continue;
+                int index = _currentIndex;
+                if (index == -1)
+                {
+                    _currentOffset = _height - 1;
+                    for (int i = _heightList.Count - 1; i >= 0 && _currentOffset > 0; i--)
+                    {
+                        _currentOffset -= _heightList[i];
+                        index = i;
+                    }
+                }
 
-                gr.DrawImage(cur_img, 0, height - _currentHeight);
+                var begin_point = new PointF(0, _currentOffset);
+                for (int i = index; i < _stringList.Count && begin_point.Y < _height; i++)
+                {
+                    var item = _stringList[i];
+                    foreach (var str in item)
+                    {
+                        DrawString(gr, str.Value, _defaultFont, new SolidBrush(str.Key), ref begin_point, size);
+                    }
+                    if (begin_point.X != 0)
+                    {
+                        begin_point.X = 0;
+                        begin_point.Y += _singleLineHeight;
+                    }
+                }
 
-                if (height < _currentHeight) break;
+                //draw scroll bar
+                if (_totalHeight > _height)
+                {
+                    float bar_height = (float)(_height / _totalHeight * _height);
+                    var ofs = (float)(_currentHeight / _totalHeight * _height);
+                    gr.FillRectangle(Brushes.DarkGray, _width - _ScrollerWidth - 1, ofs, _ScrollerWidth, bar_height);
+                }
+                gr.Dispose();
             }
 
-            //draw scroll bar
-            if (_totalHeight > _height)
-            {
-                float bar_height = (float)_height / _totalHeight * _height;
-                var ofs = (float)_currentHeight / _totalHeight * _height;
-                gr.FillRectangle(Brushes.DarkGray, _width - _ScrollerWidth - 1, ofs, _ScrollerWidth, bar_height);
-            }
-            gr.Dispose();
+            //timing stops
+            sw.Stop();
+            var ellapsed_ms = sw.ElapsedMilliseconds;
+            Debug.Print("GetImage called, function ellapsed " + ellapsed_ms + "ms");
+            
             return bmp;
         }
         private float DrawString(Graphics gr, string str, Font font, Brush brush, ref PointF begin_point, SizeF layout_size)
@@ -121,13 +160,9 @@ namespace guazi2
         }
         public void AddLine(ColorStringCollection csc)
         {
-            var bmp = new Bitmap(_width, _height);
+            var bmp = new Bitmap(1, 1);
             var gr = Graphics.FromImage(bmp);
-
-            gr.CompositingQuality = CompositingQuality.HighQuality;
-            gr.SmoothingMode = SmoothingMode.HighQuality;
-            gr.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-
+            
             PointF pt = new PointF(0, 0);
             SizeF size = new SizeF(_width - _ScrollerWidth, _height);
 
@@ -137,79 +172,163 @@ namespace guazi2
                 DrawString(gr, item.Value, _defaultFont, brush, ref pt, size);
             }
 
-            float height = gr.MeasureString(" |", _defaultFont).Height;
-            height = pt.Y + (pt.X > 0 ? height : 0);
             gr.Dispose();
 
-            int int_height = (int)Math.Ceiling(height);
-            var bmp2 = new Bitmap(_width, int_height);
-            gr = Graphics.FromImage(bmp2);
-            gr.DrawImage(bmp, 0, 0);
-            gr.Dispose();
-
-            _imgCacheList.Add(bmp2);
-            _stringList.Add(csc);
-            _totalHeight += bmp2.Height;
-            if (_imgCacheList.Count > _max_item_count)
+            if (pt.X > 0)
             {
-                _totalHeight -= _imgCacheList[0].Height;
-                if (!_autoScroll) _currentHeight -= _imgCacheList[0].Height;
-                _imgCacheList.RemoveAt(0);
+                pt.X = 0;
+                pt.Y += _singleLineHeight;
+            }
+
+            _stringList.Add(csc);
+            _heightList.Add(pt.Y);
+            _totalHeight += pt.Y;
+            if (_currentIndex == -1) _currentHeight += pt.Y;
+            if (_stringList.Count > _max_item_count)
+            {
+                _totalHeight -= _heightList[0];
+                //if (_currentIndex == 0) _currentHeight -= _heightList[0];
+                _currentHeight -= _heightList[0];
+                if (_currentHeight < 0) _currentHeight = 0;
+                if (_currentIndex > 0) _currentIndex--;
+                _heightList.RemoveAt(0);
                 _stringList.RemoveAt(0);
             }
         }
         public void ScrollDown(int dHeight = 50)
         {
-            if (_autoScroll || dHeight <= 0) return;
+            if (_currentIndex == -1 || dHeight <= 0) return;
             _currentHeight += dHeight;
-            if (_currentHeight + _height > _totalHeight) _autoScroll = true;
+            if (_currentHeight + _height >= _totalHeight)
+            {
+                _currentIndex = -1;
+                _currentHeight = _totalHeight - _height;
+            }
+            else
+            {
+                _currentOffset -= dHeight;
+                for (int i = _currentIndex; i < _stringList.Count && _currentOffset < 0; i++)
+                {
+                    _currentIndex = i;
+                    _currentOffset += _heightList[_currentIndex];
+                }
+                _currentOffset -= _heightList[_currentIndex--];
+            }
         }
         public void ScrollUp(int dHeight = 50)
         {
-            if (dHeight < 0 || _totalHeight <= _height) return;
+            if (dHeight <= 0 || _totalHeight <= _height) return;
             _currentHeight -= dHeight;
-            if (_currentHeight < 0) _currentHeight = 0;
-            _autoScroll = false;
+            if (_currentHeight < 0)
+            {
+                _currentHeight = 0;
+                _currentIndex = 0;
+                //_currentOffset = 0;
+                if (_totalHeight > _height) _currentOffset = 0;
+                else _currentOffset = (float)(_height - _totalHeight - 1);
+            }
+            else
+            {
+                if (_currentIndex == -1)
+                {
+                    _currentOffset = _height - 1;
+                    _currentIndex = _heightList.Count - 1;
+                }
+                _currentOffset += dHeight;
+                for (int i = _currentIndex; i >= 0 && _currentOffset > 0; i--)
+                {
+                    _currentIndex = i;
+                    _currentOffset -= _heightList[i];
+                }
+            }
+
         }
         public void Resize(int width, int height)
         {
-            if (width == 0 || height == 0 || (_width == width && _height == height)) return;
-            _imgCacheList.Clear();
-            _totalHeight = 0;
-            _width = width;
-            _height = height;
-            //call redraw
-            for (int i = 0; i < _stringList.Count; i++)
-            {
-                var bmp = new Bitmap(_width, _height);
-                var gr = Graphics.FromImage(bmp);
+            //timer starts
+            var sw = new Stopwatch();
+            sw.Start();
 
-                gr.CompositingQuality = CompositingQuality.HighQuality;
-                gr.SmoothingMode = SmoothingMode.HighQuality;
-                gr.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+            //if (width == 0 || height == 0 || (_width == width && _height == height)) return;
+            if (width == 0 || height == 0 || (_width == width && _height == height)) return;
+            //_imgCacheList.Clear();
+            //_totalHeight = 0;
+            //_width = width;
+            _width = width;
+            //_height = height;
+            _height = height;
+            //_size = new SizeF(_width, _height);
+            //clear
+            _heightList.Clear();
+            _totalHeight = 0;
+            _currentIndex = -1;
+            _currentHeight = -_height;
+            //addline
+            var bmp = new Bitmap(1, 1);
+            var gr = Graphics.FromImage(bmp);
+            SizeF size = new SizeF(_width - _ScrollerWidth, _height);
+            foreach (var csc in _stringList)
+            {
 
                 PointF pt = new PointF(0, 0);
-                SizeF size = new SizeF(_width - _ScrollerWidth, _height);
-
-                foreach (var item in _stringList[i])
+                foreach (var item in csc)
                 {
                     var brush = new SolidBrush(item.Key);
                     DrawString(gr, item.Value, _defaultFont, brush, ref pt, size);
                 }
 
-                float fHeight = gr.MeasureString(" |", _defaultFont).Height;
-                fHeight = pt.Y + (pt.X > 0 ? fHeight : 0);
-                gr.Dispose();
-
-                int int_height = (int)Math.Ceiling(fHeight);
-                var bmp2 = new Bitmap(_width, int_height);
-                gr = Graphics.FromImage(bmp2);
-                gr.DrawImage(bmp, 0, 0);
-                gr.Dispose();
-
-                _imgCacheList.Add(bmp2);
-                _totalHeight += bmp2.Height;
+                if (pt.X > 0)
+                {
+                    pt.X = 0;
+                    pt.Y += _singleLineHeight;
+                }
+                
+                _heightList.Add(pt.Y);
+                _totalHeight += pt.Y;
             }
+            _currentHeight = _totalHeight - _height;
+            for (int i = _currentIndex; i >= 0; i--)
+            {
+                _currentHeight -= _heightList[i];
+            }
+
+            gr.Dispose();
+            ////call redraw
+            //for (int i = 0; i < _stringList.Count; i++)
+            //{
+            //    var bmp = new Bitmap(_width, _height);
+            //    var gr = Graphics.FromImage(bmp);
+
+            //    gr.CompositingQuality = CompositingQuality.HighQuality;
+            //    gr.SmoothingMode = SmoothingMode.HighQuality;
+            //    gr.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+
+            //    PointF pt = new PointF(0, 0);
+            //    SizeF size = new SizeF(_width - _ScrollerWidth, _height);
+
+            //    foreach (var item in _stringList[i])
+            //    {
+            //        var brush = new SolidBrush(item.Key);
+            //        DrawString(gr, item.Value, _defaultFont, brush, ref pt, size);
+            //    }
+
+            //    float fHeight = gr.MeasureString(" |", _defaultFont).Height;
+            //    fHeight = pt.Y + (pt.X > 0 ? fHeight : 0);
+            //    gr.Dispose();
+
+            //    int int_height = (int)Math.Ceiling(fHeight);
+            //    var bmp2 = new Bitmap(_width, int_height);
+            //    gr = Graphics.FromImage(bmp2);
+            //    gr.DrawImage(bmp, 0, 0);
+            //    gr.Dispose();
+
+            //    _imgCacheList.Add(bmp2);
+            //    _totalHeight += bmp2.Height;
+
+            //timing stops
+            sw.Stop();
+            var ellapsed_ms = sw.ElapsedMilliseconds;
+            Debug.Print("Resize called, function ellapsed " + ellapsed_ms + "ms");
         }
     }
 
