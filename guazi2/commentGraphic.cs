@@ -235,8 +235,9 @@ namespace guazi2
                     _currentIndex = _heightList.Count - 1;
                 }
                 _currentOffset += dHeight;
-                for (int i = _currentIndex; i >= 0 && _currentOffset > 0; i--)
-                {
+                //for (int i = _currentIndex; i >= 0 && _currentOffset > 0; i--)
+                for (int i = _currentIndex; i >= 0 && _currentOffset >= 0; i--)
+                    {
                     _currentIndex = i;
                     _currentOffset -= _heightList[i];
                 }
@@ -249,15 +250,9 @@ namespace guazi2
             var sw = new Stopwatch();
             sw.Start();
 
-            //if (width == 0 || height == 0 || (_width == width && _height == height)) return;
             if (width == 0 || height == 0 || (_width == width && _height == height)) return;
-            //_imgCacheList.Clear();
-            //_totalHeight = 0;
-            //_width = width;
             _width = width;
-            //_height = height;
             _height = height;
-            //_size = new SizeF(_width, _height);
             //clear
             _heightList.Clear();
             _totalHeight = 0;
@@ -293,37 +288,6 @@ namespace guazi2
             }
 
             gr.Dispose();
-            ////call redraw
-            //for (int i = 0; i < _stringList.Count; i++)
-            //{
-            //    var bmp = new Bitmap(_width, _height);
-            //    var gr = Graphics.FromImage(bmp);
-
-            //    gr.CompositingQuality = CompositingQuality.HighQuality;
-            //    gr.SmoothingMode = SmoothingMode.HighQuality;
-            //    gr.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-
-            //    PointF pt = new PointF(0, 0);
-            //    SizeF size = new SizeF(_width - _ScrollerWidth, _height);
-
-            //    foreach (var item in _stringList[i])
-            //    {
-            //        var brush = new SolidBrush(item.Key);
-            //        DrawString(gr, item.Value, _defaultFont, brush, ref pt, size);
-            //    }
-
-            //    float fHeight = gr.MeasureString(" |", _defaultFont).Height;
-            //    fHeight = pt.Y + (pt.X > 0 ? fHeight : 0);
-            //    gr.Dispose();
-
-            //    int int_height = (int)Math.Ceiling(fHeight);
-            //    var bmp2 = new Bitmap(_width, int_height);
-            //    gr = Graphics.FromImage(bmp2);
-            //    gr.DrawImage(bmp, 0, 0);
-            //    gr.Dispose();
-
-            //    _imgCacheList.Add(bmp2);
-            //    _totalHeight += bmp2.Height;
 
             //timing stops
             sw.Stop();

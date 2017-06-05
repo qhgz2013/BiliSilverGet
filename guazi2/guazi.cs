@@ -625,7 +625,7 @@ namespace guazi2
                         SignSucceeded?.Invoke(-1);
                     }
                     UserInfoUpdated?.Invoke();
-                    
+
                 }
             }
             catch (Exception ex)
@@ -781,7 +781,7 @@ namespace guazi2
                 {
                     //ThreadPool.QueueUserWorkItem(delegate
                     //{
-                        SendItem(item);
+                    SendItem(item);
                     //});
                 }
                 _tracer.TraceInfo("SendAllItemThread exited");
@@ -1005,8 +1005,27 @@ namespace guazi2
 
                     try
                     {
-                        _tracer.TraceInfo("Comment socket: connecting");
-                        _commentSocket.Connect(ipEndPoint);
+                        //double stack network test
+                        try
+                        {
+                            _tracer.TraceInfo("Comment socket: connecting (ipv4 mode)");
+                            _commentSocket.Connect(ipEndPoint);
+                        }
+                        catch (Exception ex)
+                        {
+                            _tracer.TraceError(ex.ToString());
+                            _tracer.TraceInfo("Failing to connect using ipv4 mode, falling to ipv6");
+                            _tracer.TraceInfo("Comment socket: connecting (ipv6 mode)");
+                            try
+                            {
+                                _commentSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                                _commentSocket.Connect(ipEndPoint);
+                            }
+                            catch (Exception)
+                            {
+                                throw;
+                            }
+                        }
 
                         //sending user info
                         _tracer.TraceInfo("Comment socket: sending user info");
@@ -1074,9 +1093,9 @@ namespace guazi2
                             }
                         }
                         catch (Exception) { }
-                    }
+                    } //try
 
-                }
+                } //while
 
             }
             catch (ThreadAbortException) { }
@@ -1086,7 +1105,7 @@ namespace guazi2
             }
             finally
             {
-            }
+            } //try
 
             _tracer.TraceInfo("commentParserThread exited");
         }
@@ -1560,7 +1579,7 @@ namespace guazi2
         public void StopGettingExp()
         {
             _tracer.TraceInfo("StopGettingExp called");
-            if(_expThread != null)
+            if (_expThread != null)
             {
                 _expThread.Abort();
                 _expThread.Join();
@@ -1705,6 +1724,7 @@ namespace guazi2
                     _roomRoundInfoStartTime = (ulong)Others.ToUnixTimestamp(ct - (ct.AddSeconds(play_time) - ct));
                     _roundVideoTime = 300;
                 }
+                else if (cid == 0) return; //unknown code
                 //creating another thread to update info
                 var update_roundInfo_thd = new Thread(() =>
                 {
