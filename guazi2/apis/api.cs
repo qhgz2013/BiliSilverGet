@@ -134,13 +134,13 @@ namespace guazi2
     public class ocr
     {
         protected ocr() { }
-        [DllImport("AspriseOCR", EntryPoint ="OCR", CallingConvention =CallingConvention.Cdecl)]
+        [DllImport("ocr\\AspriseOCR", EntryPoint ="OCR", CallingConvention =CallingConvention.Cdecl)]
         public static extern IntPtr OCR(string file, int type);
-        [DllImport("AspriseOCR", EntryPoint = "OCRpart", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("ocr\\AspriseOCR", EntryPoint = "OCRpart", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr OCRpart(string file, int type, int startX, int startY, int width, int height);
-        [DllImport("AspriseOCR", EntryPoint = "OCRBarCodes", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("ocr\\AspriseOCR", EntryPoint = "OCRBarCodes", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr OCRBarCodes(string file, int type);
-        [DllImport("AspriseOCR", EntryPoint = "OCRpartBarCodes", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("ocr\\AspriseOCR", EntryPoint = "OCRpartBarCodes", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr OCRpartBarCodes(string file, int type, int startX, int startY, int width, int height);
     }
 }

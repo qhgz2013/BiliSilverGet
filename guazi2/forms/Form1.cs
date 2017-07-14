@@ -67,7 +67,7 @@ namespace guazi2
 
             //_update_gift_bag();
             timer1.Enabled = true;
-            
+
         }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
