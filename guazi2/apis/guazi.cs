@@ -6,14 +6,13 @@ using System.Threading.Tasks;
 using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using VBUtil.Utils.NetUtils;
 using System.Text.RegularExpressions;
 using System.Drawing;
-using VBUtil.Utils;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Net.Sockets;
 using System.Net;
+using guazi2.NetUtils;
 
 namespace guazi2
 {
@@ -155,7 +154,7 @@ namespace guazi2
         {
             get
             {
-                return Others.FromUnixTimeStamp(LiveTimelineUnixTS);
+                return util.FromUnixTimestamp(LiveTimelineUnixTS);
             }
         }
         //房间ID
@@ -235,7 +234,11 @@ namespace guazi2
         //以默认的参数获取http请求（Timeout为15s，重试20次，间隔300ms）
         private NetStream get_request()
         {
-            return new NetStream(Timeout: 15000, RetryTimes: 20, RetryDelay: 300);
+            var req = new NetStream();
+            req.TimeOut = 15000;
+            req.RetryDelay = 300;
+            req.RetryTimes = 20;
+            return req;
         }
         public delegate void NoArgumentDelegation();
         //获取房间ID（异常时返回0）
@@ -321,7 +324,7 @@ namespace guazi2
         //获取当前的unix时间戳
         private ulong get_timestamp()
         {
-            return (ulong)Others.ToUnixTimestamp(DateTime.Now);
+            return (ulong)util.ToUnixTimestamp(DateTime.Now);
         }
         //从ms转TimeSpan
         private TimeSpan get_timespan(int delta_ms)
@@ -795,7 +798,7 @@ namespace guazi2
             try
             {
                 int masterid = _roomInfo["data"].Value<int>("MASTERID");
-                string token = Global.DefaultCookieContainer.GetCookies(new Uri("http://live.bilibili.com/"))["LIVE_LOGIN_DATA"].Value;
+                string token = NetStream.DefaultCookieContainer.GetCookies(new Uri("http://live.bilibili.com/"))["LIVE_LOGIN_DATA"].Value;
                 SendItemRaw(item.gift_id, item.bag_id, item.gift_num, _roomID, masterid, token);
             }
             catch (Exception ex)
@@ -902,11 +905,11 @@ namespace guazi2
                         uint param5 = 1;
 
                         var ms = new MemoryStream();
-                        StreamUtils.WriteUI32(ms, total_len);
-                        StreamUtils.WriteUI16(ms, head_len);
-                        StreamUtils.WriteUI16(ms, version);
-                        StreamUtils.WriteUI32(ms, type);
-                        StreamUtils.WriteUI32(ms, param5);
+                        WriteUI32(ms, total_len);
+                        WriteUI16(ms, head_len);
+                        WriteUI16(ms, version);
+                        WriteUI32(ms, type);
+                        WriteUI32(ms, param5);
                         ms.Seek(0, SeekOrigin.Begin);
 
                         var buffer = new byte[ms.Length];
@@ -1041,11 +1044,11 @@ namespace guazi2
                         ushort version = 1;
                         uint type = 7;
                         uint param5 = 1;
-                        StreamUtils.WriteUI32(memory_stream, total_len);
-                        StreamUtils.WriteUI16(memory_stream, head_len);
-                        StreamUtils.WriteUI16(memory_stream, version);
-                        StreamUtils.WriteUI32(memory_stream, type);
-                        StreamUtils.WriteUI32(memory_stream, param5);
+                        WriteUI32(memory_stream, total_len);
+                        WriteUI16(memory_stream, head_len);
+                        WriteUI16(memory_stream, version);
+                        WriteUI32(memory_stream, type);
+                        WriteUI32(memory_stream, param5);
                         memory_stream.Write(send_bytes, 0, send_bytes.Length);
                         memory_stream.Seek(0, SeekOrigin.Begin);
 
@@ -1109,7 +1112,52 @@ namespace guazi2
 
             _tracer.TraceInfo("commentParserThread exited");
         }
-
+        #region stream utils
+        private static byte[] ReadBytes(Stream sin, int count)
+        {
+            int nRead = 0;
+            var buffer = new byte[count];
+            do
+            {
+                nRead += sin.Read(buffer, nRead, count - nRead);
+            } while (nRead == count);
+            return buffer;
+        }
+        private static uint ReadUI32(Stream sin)
+        {
+            var bytes = ReadBytes(sin, 4);
+            uint ret = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                ret <<= 8;
+                ret |= bytes[i];
+            }
+            return ret;
+        }
+        private static ushort ReadUI16(Stream sin)
+        {
+            var bytes = ReadBytes(sin, 2);
+            ushort ret = 0;
+            for (int i = 0; i < 2; i++)
+            {
+                ret <<= 8;
+                ret |= bytes[i];
+            }
+            return ret;
+        }
+        private static void WriteUI32(Stream sout, uint data)
+        {
+            WriteUI16(sout, (ushort)(data >> 16));
+            WriteUI16(sout, (ushort)(data & 0xffff));
+        }
+        private static void WriteUI16(Stream sout, ushort data)
+        {
+            var bytes = new byte[2];
+            bytes[1] = (byte)(data & 0xff);
+            bytes[0] = (byte)((data & 0xff00) >> 8);
+            sout.Write(bytes, 0, 2);
+        }
+        #endregion
         //解析从socket接收到的数据
         private void _parseSocketData(byte[] data, int length)
         {
@@ -1119,17 +1167,17 @@ namespace guazi2
 
             while (ms.Position < ms.Length)
             {
-                uint total_len = StreamUtils.ReadUI32(ms);
-                ushort head_len = StreamUtils.ReadUI16(ms);
-                ushort version = StreamUtils.ReadUI16(ms);
-                uint type = StreamUtils.ReadUI32(ms);
-                uint param5 = StreamUtils.ReadUI32(ms);
+                uint total_len = ReadUI32(ms);
+                ushort head_len = ReadUI16(ms);
+                ushort version = ReadUI16(ms);
+                uint type = ReadUI32(ms);
+                uint param5 = ReadUI32(ms);
                 //_tracer.TraceInfo("Comment socket: parsing data: total_len: " + total_len + ", head_len: " + head_len + ", version: " + version + ", type: " + type + ", param5: " + param5);
 
                 switch (type)
                 {
                     case 3:
-                        uint onlineUser = StreamUtils.ReadUI32(ms);
+                        uint onlineUser = ReadUI32(ms);
                         OnlineUserUpdate?.Invoke(onlineUser);
                         break;
                     case 5:
@@ -1702,7 +1750,7 @@ namespace guazi2
                 if (cid > 0)
                 {
                     var ct = DateTime.Now;
-                    _roomRoundInfoStartTime = (ulong)Others.ToUnixTimestamp(ct - (ct.AddSeconds(_roomRoundInfo["data"].Value<int>("play_time")) - ct));
+                    _roomRoundInfoStartTime = (ulong)util.ToUnixTimestamp(ct - (ct.AddSeconds(_roomRoundInfo["data"].Value<int>("play_time")) - ct));
 
                     var video_url = _roomRoundInfo["data"].Value<string>("play_url");
                     _tracer.TraceInfo("Getting Round Info (Source Video)");
@@ -1721,7 +1769,7 @@ namespace guazi2
                     var ct = DateTime.Now;
                     var play_time = _roomRoundInfo["data"].Value<int>("play_time");
                     play_time = 300 - play_time;
-                    _roomRoundInfoStartTime = (ulong)Others.ToUnixTimestamp(ct - (ct.AddSeconds(play_time) - ct));
+                    _roomRoundInfoStartTime = (ulong)util.ToUnixTimestamp(ct - (ct.AddSeconds(play_time) - ct));
                     _roundVideoTime = 300;
                 }
                 else if (cid == 0) return; //unknown code
@@ -1729,7 +1777,7 @@ namespace guazi2
                 var update_roundInfo_thd = new Thread(() =>
                 {
                     _tracer.TraceInfo("updateRoundInfoThd started");
-                    var sleep_time = (int)(Others.FromUnixTimeStamp(_roomRoundInfoStartTime).AddSeconds(_roundVideoTime) - DateTime.Now).TotalMilliseconds;
+                    var sleep_time = (int)(util.FromUnixTimestamp(_roomRoundInfoStartTime).AddSeconds(_roundVideoTime) - DateTime.Now).TotalMilliseconds;
                     if (sleep_time > 0) Thread.Sleep(sleep_time);
                     GetRoundInfo();
                     RoomInfoUpdated?.Invoke();

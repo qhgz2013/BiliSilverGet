@@ -72,29 +72,33 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="api.cs" />
-    <Compile Include="commentGraphic.cs" />
-    <Compile Include="Form1.cs">
+    <Compile Include="apis\api.cs" />
+    <Compile Include="forms\controls\commentGraphic.cs" />
+    <Compile Include="forms\Form1.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
+    <Compile Include="forms\Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="frmLogin.cs">
+    <Compile Include="forms\frmLogin.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="frmLogin.Designer.cs">
+    <Compile Include="forms\frmLogin.Designer.cs">
       <DependentUpon>frmLogin.cs</DependentUpon>
     </Compile>
-    <Compile Include="guazi.cs" />
+    <Compile Include="apis\guazi.cs" />
+    <Compile Include="apis\geetest.cs" />
+    <Compile Include="utils\rsa.cs" />
+    <Compile Include="utils\net-util.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="timelineGraphic.cs" />
-    <Compile Include="Tracer.cs" />
-    <EmbeddedResource Include="Form1.resx">
+    <Compile Include="forms\controls\timelineGraphic.cs" />
+    <Compile Include="utils\Tracer.cs" />
+    <Compile Include="utils\util.cs" />
+    <EmbeddedResource Include="forms\Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="frmLogin.resx">
+    <EmbeddedResource Include="forms\frmLogin.resx">
       <DependentUpon>frmLogin.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -122,23 +126,16 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\GeeTestLib\GeeTestLib.csproj">
-      <Project>{ad4cc395-dfc3-4dfb-a707-7dbab13c76fd}</Project>
-      <Name>GeeTestLib</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\VBUtil\VBUtil.vbproj">
-      <Project>{d4acda56-386a-4959-ae4d-9223048d90f2}</Project>
-      <Name>VBUtil</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="AspriseOCR.dll">
+    <Content Include="apis\traineddata.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ocr\AspriseOCR.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="DevIL.dll">
+    <Content Include="ocr\DevIL.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="ILU.dll">
+    <Content Include="ocr\ILU.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

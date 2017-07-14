@@ -26,7 +26,19 @@ namespace guazi2
         #region external IO & constructor & destructor
         private void Form1_Load(object sender, EventArgs e)
         {
-            VBUtil.Utils.NetUtils.Global.LoadCookie();
+            NetUtils.NetStream.LoadCookie();
+
+            //check cookie
+            if (!frmLogin.CheckLoginStatus())
+            {
+                var login_form = new frmLogin();
+                login_form.ShowDialog();
+                if (login_form.Canceled)
+                    Close();
+            }
+
+            load_config();
+
             _guazi = new guazi();
             _onlineUserGraphic = new timelineGraphic(pOnlineUser.Width, pOnlineUser.Height);
             _giftPriceGraphic = new timelineGraphic(pGiftPrice.Width, pGiftPrice.Height);
@@ -50,30 +62,17 @@ namespace guazi2
             _guazi.RoomInfoUpdated += _guazi_RoomInfoUpdated;
             _guazi.StreamingStopped += _guazi_StreamingStopped;
             _guazi.UserHeartbeated += _guazi_UserHeartbeated;
-
             pCommentOutput.MouseWheel += PCommentOutput_MouseWheel;
 
-            //test area
             _update_gift_bag();
-
             _commentGr = new commentGraphic(pCommentOutput.Width, pCommentOutput.Height);
-
-            load_config();
-
-            //check cookie
-            if (!frmLogin.CheckLoginStatus())
-            {
-                var login_form = new frmLogin();
-                login_form.ShowDialog();
-                if (login_form.Canceled)
-                    Close();
-            }
-
+            timer1.Enabled = true;
+            
         }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
 
-            VBUtil.Utils.NetUtils.Global.SaveCookie();
+            NetUtils.NetStream.SaveCookie();
             save_config();
         }
 
@@ -149,11 +148,11 @@ namespace guazi2
             _commentGr.Clear();
             pCommentOutput.Image = null;
 
-            if (_guazi.LiveStatus == "LIVE")
+            if (_guazi?.LiveStatus == "LIVE")
                 lRoomStatus.Text = "直播中";
-            else if (_guazi.LiveStatus == "ROUND")
-                lRoomStatus.Text = "轮播中: " + _guazi.RoundTitle;
-            else if (_guazi.LiveStatus == "PREPARING")
+            else if (_guazi?.LiveStatus == "ROUND")
+                lRoomStatus.Text = "轮播中: " + _guazi?.RoundTitle;
+            else if (_guazi?.LiveStatus == "PREPARING")
                 lRoomStatus.Text = "准备中";
 
             lLiveTime.Left = lRoomStatus.Left + lRoomStatus.Width + 10;
@@ -161,19 +160,19 @@ namespace guazi2
             var ts = (DateTime.Now - _guazi.LiveTimeline);
             lLiveTime.Text = (Math.Floor(ts.TotalHours) > 0 ? (Math.Floor(ts.TotalHours).ToString() + ":") : "") + ts.Minutes.ToString("0#") + ":" + ts.Seconds.ToString("0#");
 
-            lRoomName.Text = _guazi.RoomTitle;
+            lRoomName.Text = _guazi?.RoomTitle;
             _guazi_UserInfoUpdated();
         }
         private void _guazi_RoomInfoUpdated()
         {
             Invoke(new NoArgSTA(delegate
             {
-                lRoomName.Text = _guazi.RoomTitle;
-                if (_guazi.LiveStatus == "LIVE")
+                lRoomName.Text = _guazi?.RoomTitle;
+                if (_guazi?.LiveStatus == "LIVE")
                     lRoomStatus.Text = "直播中";
-                else if (_guazi.LiveStatus == "ROUND")
-                    lRoomStatus.Text = "轮播中: " + _guazi.RoundTitle;
-                else if (_guazi.LiveStatus == "PREPARING")
+                else if (_guazi?.LiveStatus == "ROUND")
+                    lRoomStatus.Text = "轮播中: " + _guazi?.RoundTitle;
+                else if (_guazi?.LiveStatus == "PREPARING")
                     lRoomStatus.Text = "准备中";
                 lLiveTime.Left = lRoomStatus.Left + lRoomStatus.Width + 10;
             }));
@@ -211,11 +210,11 @@ namespace guazi2
             ThreadPool.QueueUserWorkItem(
                 delegate
                 {
-                    _guazi.ChangeRoomURL(roomid);
+                    _guazi?.ChangeRoomURL(roomid);
                     Invoke(new NoArgSTA(delegate
                     {
                         init_room_info();
-                        _guazi.StartReceiveComment();
+                        _guazi?.StartReceiveComment();
                     }));
                 });
         }
@@ -454,7 +453,7 @@ namespace guazi2
             }));
             ThreadPool.QueueUserWorkItem(delegate
             {
-                _gift_bag = _guazi.GetPlayerBag();
+                _gift_bag = _guazi?.GetPlayerBag();
                 for (int i = 0; i < _gift_bag.Length; i++)
                 {
                     var item = _gift_bag[i];
@@ -479,7 +478,7 @@ namespace guazi2
                         btnSend.Tag = i;
                         btnSend.Click += delegate
                         {
-                            _guazi.SendItem(_gift_bag[(int)btnSend.Tag]);
+                            _guazi?.SendItem(_gift_bag[(int)btnSend.Tag]);
                             _update_gift_bag();
                         };
 
@@ -514,7 +513,7 @@ namespace guazi2
                 lEventTime.Text = "";
 
             //live time
-            if (_guazi.LiveTimelineUnixTS != 0)
+            if (_guazi?.LiveTimelineUnixTS != 0)
             {
                 var ts = (DateTime.Now - _guazi.LiveTimeline);
                 lLiveTime.Text = (Math.Floor(ts.TotalHours) > 0 ? (Math.Floor(ts.TotalHours).ToString() + ":") : "") + ts.Minutes.ToString("0#") + ":" + ts.Seconds.ToString("0#");
@@ -551,11 +550,11 @@ namespace guazi2
         {
             if (cAutoGrabSilver.Checked)
             {
-                _guazi.StartSilverGrabbing();
+                _guazi?.StartSilverGrabbing();
             }
             else
             {
-                _guazi.StopSilverGrabbing();
+                _guazi?.StopSilverGrabbing();
             }
         }
 
@@ -563,7 +562,7 @@ namespace guazi2
         {
             if (cAutoSign.Checked)
             {
-                _guazi.DoSign();
+                _guazi?.DoSign();
             }
         }
 
@@ -571,7 +570,7 @@ namespace guazi2
         {
             if (cAutoGetGift.Checked)
             {
-                _guazi.GetDailyGift();
+                _guazi?.GetDailyGift();
             }
         }
 
@@ -579,11 +578,11 @@ namespace guazi2
         {
             if (cAutoJoinSmallTV.Checked)
             {
-                _guazi.StartAutoJoinSmallTV();
+                _guazi?.StartAutoJoinSmallTV();
             }
             else
             {
-                _guazi.StopAutoJoinSmallTV();
+                _guazi?.StopAutoJoinSmallTV();
             }
         }
 
@@ -592,7 +591,7 @@ namespace guazi2
             if (e.KeyChar == '\r')
             {
                 e.Handled = true;
-                _guazi.SendComment(tSendComment.Text, Color.White);
+                _guazi?.SendComment(tSendComment.Text, Color.White);
                 tSendComment.Text = "";
             }
         }
@@ -605,7 +604,7 @@ namespace guazi2
 
         private void bSendAllGift_Click(object sender, EventArgs e)
         {
-            _guazi.SendAllItem();
+            _guazi?.SendAllItem();
             _gift_bag = null;
             pBag.Controls.Clear();
         }
@@ -619,26 +618,27 @@ namespace guazi2
 
         private void lblShowCookie_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            var t = new VBUtil.CookieDebugger();
-            t.Show(this);
+            //var t = new VBUtil.CookieDebugger();
+            //t.Show(this);
+            MessageBox.Show("Emmmmm.....代码整改了...这个功能还没好");
         }
 
         private void cRecord_CheckedChanged(object sender, EventArgs e)
         {
             if (cRecord.Checked)
             {
-                saveFileDialog1.FileName = _guazi.RoomTitle;
+                saveFileDialog1.FileName = _guazi?.RoomTitle;
                 if (saveFileDialog1.ShowDialog() != DialogResult.OK)
                 {
                     cRecord.Checked = false;
                     return;
                 }
                 var fileName = saveFileDialog1.FileName;
-                _guazi.StartStreaming(fileName, cRecordSaveComment.Checked);
+                _guazi?.StartStreaming(fileName, cRecordSaveComment.Checked);
             }
             else
             {
-                _guazi.StopStreaming();
+                _guazi?.StopStreaming();
             }
         }
 
@@ -646,11 +646,11 @@ namespace guazi2
         {
             if (cAutoOnlineHeart.Checked)
             {
-                _guazi.StartGettingExp();
+                _guazi?.StartGettingExp();
             }
             else
             {
-                _guazi.StopGettingExp();
+                _guazi?.StopGettingExp();
             }
         }
 
@@ -658,11 +658,11 @@ namespace guazi2
         {
             if (cJoinActivity.Checked)
             {
-                _guazi.StartEventHeartbeat();
+                _guazi?.StartEventHeartbeat();
             }
             else
             {
-                _guazi.StopEventHeartbeat();
+                _guazi?.StopEventHeartbeat();
             }
         }
         #endregion

@@ -3,24 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VBUtil.Utils.NetUtils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using guazi2.NetUtils;
 
 namespace guazi2
 {
-    public class api
+    public partial class api
     {
         protected api() { }
 
         #region constants
-        private const string LOGIN_URL= "https://passport.bilibili.com/login/dologin";
+        private const string LOGIN_URL= "https://passport.bilibili.com/web/login";
         private const string LOGOUT_URL = "https://passport.bilibili.com/login";
-        private const string BACKUP_LOGIN_URL = "https://passport.bilibili.com/ajax/miniLogin/login";
         private const string MAIN_PAGE = "http://www.bilibili.com/";
-        private const string CAPTCHA_URL = "https://passport.bilibili.com/captcha";
         private const string API_MYINFO = "http://api.bilibili.com/myinfo";
         private const string LOGIN_PUBLIC_KEY = "https://passport.bilibili.com/login?act=getkey";
         #endregion
@@ -32,7 +30,9 @@ namespace guazi2
         /// <returns></returns>
         public static bool CheckLogin()
         {
-            var request = new NetStream(Timeout: 15000, RetryTimes: 20);
+            var request = new NetStream();
+            request.TimeOut = 15000;
+            request.RetryTimes = 20;
             request.HttpGet(API_MYINFO);
             var str_response = request.ReadResponseString();
             request.Close();
@@ -44,19 +44,15 @@ namespace guazi2
         /// </summary>
         /// <param name="userID">邮箱/手机号</param>
         /// <param name="password">密码</param>
-        /// <param name="captcha">验证码</param>
-        /// <param name="login_time">登录保持时间（s）</param>
-        /// <param name="login_result">[输出]登录返回的结果</param>
+        /// <param name="challenge">GeeTest返回的Challenge</param>
+        /// <param name="validate">GeeTest返回的Validate</param>
+        /// <param name="seccode">不知用途的代码，默认为validate+"|jordan"</param>
         /// <returns></returns>
-        public static bool Login(string userID, string password, string captcha, int login_time, out string login_result)
+        public static bool Login(string userID, string password, string challenge = null, string validate = null, string seccode = null)
         {
-            var param = new Parameters();
-            param.Add("act", "login");
-            param.Add("userid", userID);
-            param.Add("gourl", "http://www.bilibili.com/");
-            param.Add("keeptime", login_time);
-            
-            var request = new NetStream(Timeout: 15000, RetryTimes: 20);
+            var request = new NetStream();
+            request.TimeOut = 15000;
+            request.RetryTimes = 20;
 
             //fetching public key
             request.HttpGet(LOGIN_PUBLIC_KEY);
@@ -70,36 +66,52 @@ namespace guazi2
 
             //encrypting password
             var rsa_crypt_server = new System.Security.Cryptography.RSACryptoServiceProvider();
-            rsa_crypt_server.ImportParameters(VBUtil.RSA.RSA_Converter.ConvertFromPemPublicKey(public_key));
+            rsa_crypt_server.ImportParameters(RSA.ConvertFromPemPublicKey(public_key));
 
             var mixed_password = hash + password;
             byte[] hex_password = Encoding.UTF8.GetBytes(mixed_password);
             byte[] hex_encrypted_password = rsa_crypt_server.Encrypt(hex_password, false);
             var encrypted_password = Convert.ToBase64String(hex_encrypted_password);
 
+            //xhr header
+            var xhr_param = new Parameters();
+            xhr_param.Add("X-Requested-With", "XMLHttpRequest");
+            xhr_param.Add("Origin", "https://passport.bilibili.com");
+            xhr_param.Add("Referer", "https://passport.bilibili.com/login");
+            //post body
+            var param = new Parameters();
+            param.Add("cType", 2);
+            param.Add("vcType", 2);
+            param.Add("captcha", "gc");
+            param.Add("user", userID);
+
             param.Add("pwd", encrypted_password);
-            param.Add("vdcode", captcha);
+            param.Add("keep", true);
+
+            param.Add("gourl", "http://www.bilibili.com/");
+            if (challenge == null) challenge = _challenge;
+            param.Add("challenge",  challenge);
+            if (validate == null) validate = _validate;
+            param.Add("validate", validate);
+            if (seccode == null) seccode = validate + "|jordan";
+            param.Add("seccode", seccode);
 
             //posting login data
-            request.HttpPost(LOGIN_URL, param);
-            var str_response = request.ReadResponseString();
-            request.Close();
+            try
+            {
+                request.HttpPost(LOGIN_URL, param, headerParam: xhr_param);
+                var str_response = request.ReadResponseString();
+                request.Close();
 
-            login_result = str_response;
-
-            return CheckLogin();
-        }
-        /// <summary>
-        /// 获取验证码图片
-        /// </summary>
-        /// <returns></returns>
-        public static Image GetCaptchaImage()
-        {
-            var request = new NetStream(Timeout: 15000, RetryTimes: 20);
-            request.HttpGet(CAPTCHA_URL);
-            var img = Image.FromStream(request.Stream);
-            request.Close();
-            return img;
+                var response = JsonConvert.DeserializeObject(str_response) as JObject;
+                if (response.Value<int>("code") == 0) return true;
+                else return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            
         }
         /// <summary>
         /// 退出登录
@@ -109,7 +121,9 @@ namespace guazi2
         {
             var param = new Parameters();
             param.Add("act", "exit");
-            var request = new NetStream(Timeout: 15000, RetryTimes: 20);
+            var request = new NetStream();
+            request.TimeOut = 15000;
+            request.RetryTimes = 20;
             request.HttpGet(LOGOUT_URL, urlParam: param);
             var str_response = request.ReadResponseString();
             request.Close();

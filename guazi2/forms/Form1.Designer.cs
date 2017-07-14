@@ -32,6 +32,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.tRoomID = new System.Windows.Forms.TextBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.lblShowCookie = new System.Windows.Forms.LinkLabel();
             this.lOnlineUser2 = new System.Windows.Forms.Label();
             this.lRoomName = new System.Windows.Forms.Label();
             this.lLiveTime = new System.Windows.Forms.Label();
@@ -89,7 +90,6 @@
             this.label2 = new System.Windows.Forms.Label();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
-            this.lblShowCookie = new System.Windows.Forms.LinkLabel();
             this.groupBox1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -145,6 +145,19 @@
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "个人/房间信息";
+            // 
+            // lblShowCookie
+            // 
+            this.lblShowCookie.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblShowCookie.AutoSize = true;
+            this.lblShowCookie.Location = new System.Drawing.Point(566, 16);
+            this.lblShowCookie.Name = "lblShowCookie";
+            this.lblShowCookie.Size = new System.Drawing.Size(95, 17);
+            this.lblShowCookie.TabIndex = 6;
+            this.lblShowCookie.TabStop = true;
+            this.lblShowCookie.Text = "查看cookie信息";
+            this.lblShowCookie.Visible = false;
+            this.lblShowCookie.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lblShowCookie_LinkClicked);
             // 
             // lOnlineUser2
             // 
@@ -709,20 +722,7 @@
             // 
             // timer1
             // 
-            this.timer1.Enabled = true;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
-            // 
-            // lblShowCookie
-            // 
-            this.lblShowCookie.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblShowCookie.AutoSize = true;
-            this.lblShowCookie.Location = new System.Drawing.Point(566, 16);
-            this.lblShowCookie.Name = "lblShowCookie";
-            this.lblShowCookie.Size = new System.Drawing.Size(95, 17);
-            this.lblShowCookie.TabIndex = 6;
-            this.lblShowCookie.TabStop = true;
-            this.lblShowCookie.Text = "查看cookie信息";
-            this.lblShowCookie.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lblShowCookie_LinkClicked);
             // 
             // Form1
             // 

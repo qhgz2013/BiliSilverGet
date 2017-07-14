@@ -32,13 +32,9 @@
             this.tUserName = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.tPassword = new System.Windows.Forms.TextBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.tCaptcha = new System.Windows.Forms.TextBox();
-            this.pCaptcha = new System.Windows.Forms.PictureBox();
             this.bConfirm = new System.Windows.Forms.Button();
             this.bCancel = new System.Windows.Forms.Button();
-            this.lRefreshCaptcha = new System.Windows.Forms.LinkLabel();
-            ((System.ComponentModel.ISupportInitialize)(this.pCaptcha)).BeginInit();
+            this.lGeeTest = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // label1
@@ -71,42 +67,15 @@
             // 
             this.tPassword.Location = new System.Drawing.Point(59, 32);
             this.tPassword.Name = "tPassword";
-            this.tPassword.PasswordChar = '●';
+            this.tPassword.PasswordChar = '*';
             this.tPassword.ShortcutsEnabled = false;
             this.tPassword.Size = new System.Drawing.Size(198, 21);
             this.tPassword.TabIndex = 2;
             this.tPassword.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tPassword_KeyPress);
             // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 62);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(41, 12);
-            this.label3.TabIndex = 0;
-            this.label3.Text = "验证码";
-            // 
-            // tCaptcha
-            // 
-            this.tCaptcha.Location = new System.Drawing.Point(176, 59);
-            this.tCaptcha.Name = "tCaptcha";
-            this.tCaptcha.Size = new System.Drawing.Size(81, 21);
-            this.tCaptcha.TabIndex = 3;
-            this.tCaptcha.Enter += new System.EventHandler(this.tCaptcha_Enter);
-            this.tCaptcha.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tCaptcha_KeyPress);
-            // 
-            // pCaptcha
-            // 
-            this.pCaptcha.Location = new System.Drawing.Point(59, 56);
-            this.pCaptcha.Name = "pCaptcha";
-            this.pCaptcha.Size = new System.Drawing.Size(104, 56);
-            this.pCaptcha.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.pCaptcha.TabIndex = 2;
-            this.pCaptcha.TabStop = false;
-            // 
             // bConfirm
             // 
-            this.bConfirm.Location = new System.Drawing.Point(75, 118);
+            this.bConfirm.Location = new System.Drawing.Point(79, 59);
             this.bConfirm.Name = "bConfirm";
             this.bConfirm.Size = new System.Drawing.Size(88, 45);
             this.bConfirm.TabIndex = 4;
@@ -116,7 +85,7 @@
             // 
             // bCancel
             // 
-            this.bCancel.Location = new System.Drawing.Point(176, 119);
+            this.bCancel.Location = new System.Drawing.Point(176, 60);
             this.bCancel.Name = "bCancel";
             this.bCancel.Size = new System.Drawing.Size(81, 44);
             this.bCancel.TabIndex = 5;
@@ -124,35 +93,30 @@
             this.bCancel.UseVisualStyleBackColor = true;
             this.bCancel.Click += new System.EventHandler(this.bCancel_Click);
             // 
-            // lRefreshCaptcha
+            // lGeeTest
             // 
-            this.lRefreshCaptcha.AutoSize = true;
-            this.lRefreshCaptcha.Location = new System.Drawing.Point(176, 89);
-            this.lRefreshCaptcha.Name = "lRefreshCaptcha";
-            this.lRefreshCaptcha.Size = new System.Drawing.Size(65, 12);
-            this.lRefreshCaptcha.TabIndex = 6;
-            this.lRefreshCaptcha.TabStop = true;
-            this.lRefreshCaptcha.Text = "刷新验证码";
-            this.lRefreshCaptcha.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lRefreshCaptcha_LinkClicked);
+            this.lGeeTest.AutoSize = true;
+            this.lGeeTest.Location = new System.Drawing.Point(12, 128);
+            this.lGeeTest.Name = "lGeeTest";
+            this.lGeeTest.Size = new System.Drawing.Size(119, 12);
+            this.lGeeTest.TabIndex = 6;
+            this.lGeeTest.Text = "发送滑动验证请求...";
             // 
             // frmLogin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(269, 175);
-            this.Controls.Add(this.lRefreshCaptcha);
+            this.ClientSize = new System.Drawing.Size(269, 149);
+            this.Controls.Add(this.lGeeTest);
             this.Controls.Add(this.bCancel);
             this.Controls.Add(this.bConfirm);
-            this.Controls.Add(this.pCaptcha);
-            this.Controls.Add(this.tCaptcha);
             this.Controls.Add(this.tPassword);
-            this.Controls.Add(this.label3);
             this.Controls.Add(this.tUserName);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Name = "frmLogin";
             this.Text = "frmLogin";
-            ((System.ComponentModel.ISupportInitialize)(this.pCaptcha)).EndInit();
+            this.Load += new System.EventHandler(this.frmLogin_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -164,11 +128,8 @@
         private System.Windows.Forms.TextBox tUserName;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox tPassword;
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.TextBox tCaptcha;
-        private System.Windows.Forms.PictureBox pCaptcha;
         private System.Windows.Forms.Button bConfirm;
         private System.Windows.Forms.Button bCancel;
-        private System.Windows.Forms.LinkLabel lRefreshCaptcha;
+        private System.Windows.Forms.Label lGeeTest;
     }
 }

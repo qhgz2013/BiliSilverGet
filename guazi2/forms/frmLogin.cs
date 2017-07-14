@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace guazi2
@@ -14,23 +15,49 @@ namespace guazi2
         public frmLogin()
         {
             InitializeComponent();
+            start_geetest();
+        }
+        private void start_geetest()
+        {
+            lGeeTest.Text = "发送滑动验证请求...";
+            _thd_for_challenge = new Thread(challenge_callback);
+            _thd_for_challenge.IsBackground = true;
+            _thd_for_challenge.Name = "GeeTest后台处理线程";
+            _thd_for_challenge.Start();
         }
 
         public static bool CheckLoginStatus()
         {
 
-            var cc = VBUtil.Utils.NetUtils.Global.DefaultCookieContainer.GetCookies(new Uri("http://www.bilibili.com"));
+            var cc = NetUtils.NetStream.DefaultCookieContainer.GetCookies(new Uri("http://www.bilibili.com"));
             var login_cookie = cc["DedeUserID"];
             if (login_cookie == null || login_cookie.Expired)
                 return false;
             return true;
         }
         private bool _canceled;
+        private bool _frm_created;
         public bool Canceled { get { return _canceled; } }
-
         public string User_Name { get { return tUserName.Text; } set { tUserName.Text = value; } }
         public string PassWord { get { return tPassword.Text; } set { tPassword.Text = value; } }
-        public string Captcha { get { return tCaptcha.Text; } set { tCaptcha.Text = value; } }
+        private Thread _thd_for_challenge;
+        private void challenge_callback()
+        {
+            string validate_string = string.Empty;
+            do
+            {
+                validate_string = api.DoChallenge();
+            } while (string.IsNullOrEmpty(validate_string));
+
+            //Invoking
+            if (_frm_created)
+            {
+                Invoke(new ThreadStart(delegate
+                {
+                    lGeeTest.Text = "滑动验证已通过";
+                }));
+            }
+        }
         private void bConfirm_Click(object sender, EventArgs e)
         {
             _canceled = false;
@@ -42,7 +69,6 @@ namespace guazi2
             _canceled = true;
             tUserName.Text = "";
             tPassword.Text = "";
-            tCaptcha.Text = "";
             Close();
         }
         private void tryLogin()
@@ -52,35 +78,29 @@ namespace guazi2
                 tUserName.Focus();
             else if (string.IsNullOrEmpty(tPassword.Text))
                 tPassword.Focus();
-            else if (string.IsNullOrEmpty(tCaptcha.Text))
+            else if (string.IsNullOrEmpty(api.Challenge) || string.IsNullOrEmpty(api.Validate))
             {
-                if (pCaptcha.Image == null)
-                {
-                    pCaptcha.Image = api.GetCaptchaImage();
-                    tCaptcha.Text = "";
-                }
-                tCaptcha.Focus();
+                MessageBox.Show(this, "请等待滑动验证通过", "Emmm，手速好快！", MessageBoxButtons.OK, MessageBoxIcon.None);
             }
             else
             {
                 //login
-                string login_result;
                 try
                 {
-                    if (api.Login(User_Name, PassWord, Captcha, 2592000, out login_result))
+                    if (api.Login(User_Name, PassWord))
                     {
                         Close();
                     }
-                    if (login_result.Contains("验证码错误"))
+                    else
                     {
-                        pCaptcha.Image = api.GetCaptchaImage();
+                        start_geetest();
                     }
+
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(this, "登录出现错误，请稍后再重试：\r\n" + ex.ToString(), "出错啦", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    pCaptcha.Image = api.GetCaptchaImage();
-                    tCaptcha.Text = "";
+                    start_geetest();
                 }
             }
         }
@@ -111,17 +131,9 @@ namespace guazi2
             }
         }
 
-        private void tCaptcha_Enter(object sender, EventArgs e)
+        private void frmLogin_Load(object sender, EventArgs e)
         {
-            if (pCaptcha.Image == null)
-            {
-                pCaptcha.Image = api.GetCaptchaImage();
-            }
-        }
-
-        private void lRefreshCaptcha_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            pCaptcha.Image = api.GetCaptchaImage();
+            _frm_created = true;
         }
     }
 }
