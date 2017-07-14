@@ -1120,7 +1120,7 @@ namespace guazi2
             do
             {
                 nRead += sin.Read(buffer, nRead, count - nRead);
-            } while (nRead == count);
+            } while (nRead != count);
             return buffer;
         }
         private static uint ReadUI32(Stream sin)

@@ -37,12 +37,11 @@ namespace guazi2
                     Close();
             }
 
-            load_config();
-
             _guazi = new guazi();
             _onlineUserGraphic = new timelineGraphic(pOnlineUser.Width, pOnlineUser.Height);
             _giftPriceGraphic = new timelineGraphic(pGiftPrice.Width, pGiftPrice.Height);
             _commentFreqGraphic = new timelineGraphic(pCommentFreq.Width, pCommentFreq.Height);
+            _commentGr = new commentGraphic(pCommentOutput.Width, pCommentOutput.Height);
 
             _guazi.OnlineUserUpdate += _guazi_OnlineUserUpdate;
             _guazi.GiftRecv += _guazi_GiftRecv;
@@ -64,8 +63,9 @@ namespace guazi2
             _guazi.UserHeartbeated += _guazi_UserHeartbeated;
             pCommentOutput.MouseWheel += PCommentOutput_MouseWheel;
 
-            _update_gift_bag();
-            _commentGr = new commentGraphic(pCommentOutput.Width, pCommentOutput.Height);
+            load_config();
+
+            //_update_gift_bag();
             timer1.Enabled = true;
             
         }
