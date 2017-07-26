@@ -67,7 +67,7 @@ namespace guazi2
                 if (index == -1)
                 {
                     _currentOffset = _height - 1;
-                    for (int i = _heightList.Count - 1; i >= 0 && _currentOffset > 0; i--)
+                    for (int i = _heightList.Count - 1; i >= 0 && _currentOffset >= 0; i--)
                     {
                         _currentOffset -= _heightList[i];
                         index = i;
@@ -103,7 +103,7 @@ namespace guazi2
             sw.Stop();
             var ellapsed_ms = sw.ElapsedMilliseconds;
             Debug.Print("GetImage called, function ellapsed " + ellapsed_ms + "ms");
-            
+
             return bmp;
         }
         private float DrawString(Graphics gr, string str, Font font, Brush brush, ref PointF begin_point, SizeF layout_size)
@@ -162,7 +162,7 @@ namespace guazi2
         {
             var bmp = new Bitmap(1, 1);
             var gr = Graphics.FromImage(bmp);
-            
+
             PointF pt = new PointF(0, 0);
             SizeF size = new SizeF(_width - _ScrollerWidth, _height);
 
@@ -207,13 +207,14 @@ namespace guazi2
             else
             {
                 _currentOffset -= dHeight;
-                for (int i = _currentIndex; i < _stringList.Count && _currentOffset < 0; i++)
+                for (int i = _currentIndex; i < _stringList.Count; i++)
                 {
-                    _currentIndex = i;
-                    _currentOffset += _heightList[_currentIndex];
+                    if (_currentOffset + _heightList[i] >= 0) break;
+                    _currentIndex = i + 1;
+                    _currentOffset += _heightList[i];
                 }
-                _currentOffset -= _heightList[_currentIndex--];
             }
+            //Debug.Print(string.Format("dHeight={0}, _currentHeight={1}, _currentIndex={2}, _currentOffset={3}", dHeight, _currentHeight, _currentIndex, _currentOffset));
         }
         public void ScrollUp(int dHeight = 50)
         {
@@ -223,7 +224,6 @@ namespace guazi2
             {
                 _currentHeight = 0;
                 _currentIndex = 0;
-                //_currentOffset = 0;
                 if (_totalHeight > _height) _currentOffset = 0;
                 else _currentOffset = (float)(_height - _totalHeight - 1);
             }
@@ -233,15 +233,17 @@ namespace guazi2
                 {
                     _currentOffset = _height - 1;
                     _currentIndex = _heightList.Count - 1;
+                    _currentOffset -= _heightList[_currentIndex];
                 }
                 _currentOffset += dHeight;
-                //for (int i = _currentIndex; i >= 0 && _currentOffset > 0; i--)
-                for (int i = _currentIndex; i >= 0 && _currentOffset >= 0; i--)
-                    {
+                for (int i = _currentIndex - 1; i >= 0 && _currentOffset >= 0; i--)
+                {
                     _currentIndex = i;
                     _currentOffset -= _heightList[i];
                 }
+
             }
+            //Debug.Print(string.Format("dHeight={0}, _currentHeight={1}, _currentIndex={2}, _currentOffset={3}", dHeight, _currentHeight, _currentIndex, _currentOffset));
 
         }
         public void Resize(int width, int height)
@@ -277,7 +279,7 @@ namespace guazi2
                     pt.X = 0;
                     pt.Y += _singleLineHeight;
                 }
-                
+
                 _heightList.Add(pt.Y);
                 _totalHeight += pt.Y;
             }

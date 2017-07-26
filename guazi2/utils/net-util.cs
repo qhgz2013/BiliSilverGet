@@ -42,7 +42,7 @@ namespace guazi2
             public const string STR_RANGE = "Range";
             public const string STR_TRANSFER_ENCODING = "Transfer-Encoding";
 
-            public const string STR_CONNECTION_KEEP_ALIVE = "keep-live";
+            public const string STR_CONNECTION_KEEP_ALIVE = "keep-alive";
             public const string STR_CONNECTION_CLOSE = "close";
             public const string STR_ACCEPT_ENCODING_GZIP = "gzip";
             public const string STR_ACCEPT_ENCODING_DEFLATE = "deflate";
@@ -76,7 +76,7 @@ namespace guazi2
             //默认保存cookie的文件名
             public const string DEFAULT_COOKIE_FILE_NAME = "cookie.dat";
             //默认的TCP连接数
-            public const int DEFAULT_TCP_CONNECTION = 200;
+            public const int DEFAULT_TCP_CONNECTION = 1000;
             #endregion
 
             #region Cookie Segment
@@ -609,6 +609,7 @@ namespace guazi2
                                 request.UserAgent = e.Value;
                                 break;
                             default:
+                                request.Headers.Add(e.Key, e.Value);
                                 break;
                         }
                     }
@@ -684,7 +685,7 @@ namespace guazi2
                     catch (ThreadAbortException ex) { throw ex; }
                     catch (WebException ex)
                     {
-                        Tracer.GlobalTracer.TraceError(ex.ToString());
+                        if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                         cur_times++;
 
                         if (ex.Response != null)
@@ -714,7 +715,7 @@ namespace guazi2
                     }
                     catch (Exception ex)
                     {
-                        Tracer.GlobalTracer.TraceError(ex.ToString());
+                        if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                         cur_times++;
                         if (RetryTimes >= 0 && cur_times > RetryTimes) throw ex;
                         if (RetryDelay > 0) Thread.Sleep(RetryDelay);
@@ -774,17 +775,9 @@ namespace guazi2
                         break;
                     }
                     catch (ThreadAbortException) { throw; }
-                    //catch (WebException ex)
-                    //{
-                    //    Tracer.GlobalTracer.TraceError(ex.ToString());
-                    //    cur_times++;
-
-                    //    if (RetryTimes >= 0 && cur_times > RetryTimes) throw ex;
-                    //    if (RetryDelay > 0) Thread.Sleep(RetryDelay);
-                    //}
                     catch (Exception ex)
                     {
-                        Tracer.GlobalTracer.TraceError(ex.ToString());
+                        if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                         cur_times++;
                         if (RetryTimes >= 0 && cur_times > RetryTimes) throw ex;
                         if (RetryDelay > 0) Thread.Sleep(RetryDelay);
@@ -827,7 +820,7 @@ namespace guazi2
                         {
                             if (ex.Status == WebExceptionStatus.RequestCanceled) break; // throw ex;
 
-                            Tracer.GlobalTracer.TraceError(ex.ToString());
+                            if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                             cur_times++;
                             if (RetryTimes >= 0 && cur_times > RetryTimes) break;// throw ex;
                             if (RetryDelay > 0) Thread.Sleep(RetryDelay);
@@ -856,7 +849,7 @@ namespace guazi2
                         }
                         catch (Exception ex)
                         {
-                            Tracer.GlobalTracer.TraceError(ex.ToString());
+                            if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                             cur_times++;
                             if (RetryTimes >= 0 && cur_times > RetryTimes) break;//throw ex;
                             if (RetryDelay > 0) Thread.Sleep(RetryDelay);
@@ -872,7 +865,7 @@ namespace guazi2
                     }
                     catch (Exception ex)
                     {
-                        Tracer.GlobalTracer.TraceError(ex.ToString());
+                        if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                     }
                 }
             }
@@ -920,7 +913,7 @@ namespace guazi2
                     catch (ThreadAbortException) { throw; }
                     catch (WebException ex)
                     {
-                        Tracer.GlobalTracer.TraceError(ex.ToString());
+                        if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                         cur_times++;
 
                         if (ex.Response != null)
@@ -950,7 +943,7 @@ namespace guazi2
                     }
                     catch (Exception ex)
                     {
-                        Tracer.GlobalTracer.TraceError(ex.ToString());
+                        if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                         cur_times++;
                         if (RetryTimes >= 0 && cur_times > RetryTimes) throw ex;
                         if (RetryDelay > 0) Thread.Sleep(RetryDelay);
@@ -1020,7 +1013,7 @@ namespace guazi2
                     catch (ThreadAbortException) { throw; }
                     catch (WebException ex)
                     {
-                        Tracer.GlobalTracer.TraceError(ex.ToString());
+                        if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                         cur_times++;
 
                         if (ex.Response != null)
@@ -1050,7 +1043,7 @@ namespace guazi2
                     }
                     catch (Exception ex)
                     {
-                        Tracer.GlobalTracer.TraceError(ex.ToString());
+                        if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                         cur_times++;
                         if (RetryTimes >= 0 && cur_times > RetryTimes) throw ex;
                         if (RetryDelay > 0) Thread.Sleep(RetryDelay);
@@ -1103,7 +1096,7 @@ namespace guazi2
                     catch (ThreadAbortException) { throw; }
                     catch (WebException ex)
                     {
-                        Tracer.GlobalTracer.TraceError(ex.ToString());
+                        if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                         cur_times++;
 
                         if (ex.Response != null)
@@ -1133,7 +1126,7 @@ namespace guazi2
                     }
                     catch (Exception ex)
                     {
-                        Tracer.GlobalTracer.TraceError(ex.ToString());
+                        if (_enableTracing) Tracer.GlobalTracer.TraceError(ex.ToString());
                         cur_times++;
                         if (RetryTimes >= 0 && cur_times > RetryTimes) throw ex;
                         if (RetryDelay > 0) Thread.Sleep(RetryDelay);

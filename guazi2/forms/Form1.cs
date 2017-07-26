@@ -447,19 +447,16 @@ namespace guazi2
         private guazi.BagItem[] _gift_bag;
         private void _update_gift_bag()
         {
-            Invoke(new NoArgSTA(delegate
-            {
-                pBag.Controls.Clear();
-            }));
             ThreadPool.QueueUserWorkItem(delegate
             {
                 _gift_bag = _guazi?.GetPlayerBag();
-                for (int i = 0; i < _gift_bag.Length; i++)
+                Invoke(new NoArgSTA(delegate
                 {
-                    var item = _gift_bag[i];
-
-                    Invoke(new NoArgSTA(delegate
+                    pBag.Controls.Clear();
+                    for (int i = 0; i < _gift_bag.Length; i++)
                     {
+                        var item = _gift_bag[i];
+
                         var lblName = new Label();
                         lblName.AutoSize = true;
                         lblName.Font = pBag.Font;
@@ -486,8 +483,8 @@ namespace guazi2
                         pBag.Controls.Add(lblExpires);
                         pBag.Controls.Add(btnSend);
                         pBag.SetFlowBreak(btnSend, true);
-                    }));
-                }
+                    }
+                }));
             });
         }
 
@@ -606,12 +603,11 @@ namespace guazi2
         {
             _guazi?.SendAllItem();
             _gift_bag = null;
-            pBag.Controls.Clear();
+            _update_gift_bag();
         }
 
         private void pCommentOutput_SizeChanged(object sender, EventArgs e)
         {
-            System.Diagnostics.Debug.Print("Comment Output Resized to: " + pCommentOutput.Width + " x " + pCommentOutput.Height);
             _commentGr.Resize(pCommentOutput.Width, pCommentOutput.Height);
             pCommentOutput.Image = _commentGr.GetImage();
         }
