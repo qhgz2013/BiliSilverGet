@@ -1115,12 +1115,13 @@ namespace guazi2
         #region stream utils
         private static byte[] ReadBytes(Stream sin, int count)
         {
-            int nRead = 0;
+            int nRead = 0, r = 0;
             var buffer = new byte[count];
             do
             {
-                nRead += sin.Read(buffer, nRead, count - nRead);
-            } while (nRead != count);
+                r = sin.Read(buffer, nRead, count - nRead);
+                nRead += r;
+            } while (nRead != count && r != 0);
             return buffer;
         }
         private static uint ReadUI32(Stream sin)
@@ -1722,6 +1723,7 @@ namespace guazi2
 
 
         #region Live streaming and status
+        private Thread _roundThread;
         public void GetRoundInfo()
         {
             _tracer.TraceInfo("GetRoundInfo called");
@@ -1772,9 +1774,14 @@ namespace guazi2
                     _roomRoundInfoStartTime = (ulong)util.ToUnixTimestamp(ct - (ct.AddSeconds(play_time) - ct));
                     _roundVideoTime = 300;
                 }
-                else if (cid == 0) return; //unknown code
+                else if (cid == 0 || cid == -3) return; //unknown code
                 //creating another thread to update info
-                var update_roundInfo_thd = new Thread(() =>
+                if (_roundThread != null)
+                {
+                    try { _roundThread.Abort(); }
+                    catch (Exception) { }
+                }
+                _roundThread = new Thread(() =>
                 {
                     _tracer.TraceInfo("updateRoundInfoThd started");
                     var sleep_time = (int)(util.FromUnixTimestamp(_roomRoundInfoStartTime).AddSeconds(_roundVideoTime) - DateTime.Now).TotalMilliseconds;
@@ -1783,9 +1790,9 @@ namespace guazi2
                     RoomInfoUpdated?.Invoke();
                     _tracer.TraceInfo("updateRoundInfoThd exited");
                 });
-                update_roundInfo_thd.IsBackground = true;
-                update_roundInfo_thd.Name = "轮播内容更新线程";
-                update_roundInfo_thd.Start();
+                _roundThread.IsBackground = true;
+                _roundThread.Name = "轮播内容更新线程";
+                _roundThread.Start();
             }
             catch (Exception ex)
             {

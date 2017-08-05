@@ -91,7 +91,7 @@ namespace guazi2
                 try
                 {
                     var fi = new FileInfo(file);
-                    if (fi.Exists || fi.Length > 0)
+                    if (fi.Exists && fi.Length > 0)
                     {
                         var stream = fi.OpenRead();
                         var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
