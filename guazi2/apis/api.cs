@@ -50,6 +50,9 @@ namespace guazi2
         /// <returns></returns>
         public static bool Login(string userID, string password, string challenge = null, string validate = null, string seccode = null)
         {
+            //最新的测试是forbidden，破解随缘吧，有空就折腾轨迹拟合，没空就算了
+            throw new NotImplementedException();
+
             var request = new NetStream();
             request.TimeOut = 15000;
             request.RetryTimes = 20;
@@ -89,9 +92,9 @@ namespace guazi2
             param.Add("keep", true);
 
             param.Add("gourl", "http://www.bilibili.com/");
-            if (challenge == null) challenge = _challenge;
+            //if (challenge == null) challenge = _challenge;
             param.Add("challenge",  challenge);
-            if (validate == null) validate = _validate;
+            //if (validate == null) validate = _validate;
             param.Add("validate", validate);
             if (seccode == null) seccode = validate + "|jordan";
             param.Add("seccode", seccode);

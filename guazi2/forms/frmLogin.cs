@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -15,125 +16,89 @@ namespace guazi2
         public frmLogin()
         {
             InitializeComponent();
-            start_geetest();
-        }
-        private void start_geetest()
-        {
-            lGeeTest.Text = "发送滑动验证请求...";
-            _thd_for_challenge = new Thread(challenge_callback);
-            _thd_for_challenge.IsBackground = true;
-            _thd_for_challenge.Name = "GeeTest后台处理线程";
-            _thd_for_challenge.Start();
         }
 
         public static bool CheckLoginStatus()
         {
 
-            var cc = NetUtils.NetStream.DefaultCookieContainer.GetCookies(new Uri("http://www.bilibili.com"));
+            var cc = NetUtils.NetStream.DefaultCookieContainer.GetCookies(new Uri("https://www.bilibili.com"));
             var login_cookie = cc["DedeUserID"];
             if (login_cookie == null || login_cookie.Expired)
                 return false;
             return true;
         }
-        private bool _canceled;
-        private bool _frm_created;
-        public bool Canceled { get { return _canceled; } }
-        public string User_Name { get { return tUserName.Text; } set { tUserName.Text = value; } }
-        public string PassWord { get { return tPassword.Text; } set { tPassword.Text = value; } }
-        private Thread _thd_for_challenge;
-        private void challenge_callback()
-        {
-            string validate_string = string.Empty;
-            do
-            {
-                validate_string = api.DoChallenge();
-            } while (string.IsNullOrEmpty(validate_string));
 
-            //Invoking
-            if (_frm_created)
-            {
-                Invoke(new ThreadStart(delegate
-                {
-                    lGeeTest.Text = "滑动验证已通过";
-                }));
-            }
-        }
-        private void bConfirm_Click(object sender, EventArgs e)
+        private bool _is_login_success;
+        private bool _cancelled;
+        public bool Canceled { get { return _cancelled; } }
+        private void frmLogin_FormClosing(object sender, FormClosingEventArgs e)
         {
-            _canceled = false;
-            tryLogin();
+            if (!_is_login_success)
+                _cancelled = true;
+            _frm_init = false;
         }
 
-        private void bCancel_Click(object sender, EventArgs e)
-        {
-            _canceled = true;
-            tUserName.Text = "";
-            tPassword.Text = "";
-            Close();
-        }
-        private void tryLogin()
-        {
-            //login check
-            if (string.IsNullOrEmpty(tUserName.Text))
-                tUserName.Focus();
-            else if (string.IsNullOrEmpty(tPassword.Text))
-                tPassword.Focus();
-            else if (string.IsNullOrEmpty(api.Challenge) || string.IsNullOrEmpty(api.Validate))
-            {
-                MessageBox.Show(this, "请等待滑动验证通过", "Emmm，手速好快！", MessageBoxButtons.OK, MessageBoxIcon.None);
-            }
-            else
-            {
-                //login
-                try
-                {
-                    if (api.Login(User_Name, PassWord))
-                    {
-                        Close();
-                    }
-                    else
-                    {
-                        start_geetest();
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(this, "登录出现错误，请稍后再重试：\r\n" + ex.ToString(), "出错啦", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    start_geetest();
-                }
-            }
-        }
-        private void tUserName_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            if (e.KeyChar == '\r')
-            {
-                e.Handled = true;
-                tryLogin();
-            }
-        }
-
-        private void tPassword_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            if (e.KeyChar == '\r')
-            {
-                e.Handled = true;
-                tryLogin();
-            }
-        }
-
-        private void tCaptcha_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            if (e.KeyChar == '\r')
-            {
-                e.Handled = true;
-                tryLogin();
-            }
-        }
-
+        private bool _frm_init;
         private void frmLogin_Load(object sender, EventArgs e)
         {
-            _frm_created = true;
+            _frm_init = true;
+            _load_qrcode();
+        }
+        private void _load_qrcode()
+        {
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                string url;
+                do
+                {
+                    url = api.GetLoginQRUrl();
+                    if (string.IsNullOrEmpty(url))
+                        Thread.Sleep(1000);
+                    else break;
+                } while (true);
+                var encoder = new Gma.QrCodeNet.Encoding.QrEncoder(Gma.QrCodeNet.Encoding.ErrorCorrectionLevel.M);
+                var code = encoder.Encode(url);
+
+                var renderer = new Gma.QrCodeNet.Encoding.Windows.Render.GraphicsRenderer(new Gma.QrCodeNet.Encoding.Windows.Render.FixedModuleSize(5, Gma.QrCodeNet.Encoding.Windows.Render.QuietZoneModules.Two), Brushes.Black, Brushes.White);
+                var ms = new MemoryStream();
+                renderer.WriteToStream(code.Matrix, System.Drawing.Imaging.ImageFormat.Bmp, ms);
+
+                ms.Seek(0, SeekOrigin.Begin);
+                var img = Image.FromStream(ms);
+                if (_frm_init)
+                {
+                    Invoke(new ThreadStart(delegate
+                    {
+                        pictureBox1.Image = img;
+                    }));
+                }
+
+                _qr_login();
+            });
+        }
+        private void _qr_login()
+        {
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                while (!(_is_login_success = api.QRLogin()))
+                {
+                    Thread.Sleep(1000);
+                    if (util.FromUnixTimestamp(api.OAuthQRTimestamp + api.OAuthQrValidateTime) < DateTime.Now)
+                    {
+                        _load_qrcode();
+                        break;
+                    }
+                }
+
+                if (_is_login_success)
+                {
+                    if (_frm_init)
+                    {
+                        Invoke(new ThreadStart(delegate { Close(); }));
+                    }
+                }
+            });
         }
     }
 }

@@ -32,7 +32,7 @@ namespace guazi2
             if (!frmLogin.CheckLoginStatus())
             {
                 var login_form = new frmLogin();
-                login_form.ShowDialog();
+                login_form.ShowDialog(this);
                 if (login_form.Canceled)
                     Close();
             }
@@ -73,7 +73,8 @@ namespace guazi2
         {
 
             NetUtils.NetStream.SaveCookie();
-            save_config();
+            if (frmLogin.CheckLoginStatus())
+                save_config();
         }
 
         private void load_config()

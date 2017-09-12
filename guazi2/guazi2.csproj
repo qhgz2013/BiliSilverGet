@@ -73,6 +73,10 @@
     <ApplicationIcon>icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Gma.QrCodeNet.Encoding, Version=0.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\QrCode.Net.0.4.0.0\lib\net40\Gma.QrCodeNet.Encoding.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net40\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
@@ -91,6 +95,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="apis\api.cs" />
+    <Compile Include="apis\qr-login.cs" />
     <Compile Include="forms\controls\commentGraphic.cs" />
     <Compile Include="forms\Form1.cs">
       <SubType>Form</SubType>
@@ -105,7 +110,7 @@
       <DependentUpon>frmLogin.cs</DependentUpon>
     </Compile>
     <Compile Include="apis\guazi.cs" />
-    <Compile Include="apis\geetest.cs" />
+    <None Include="apis\geetest.cs" />
     <Compile Include="utils\rsa.cs" />
     <Compile Include="utils\net-util.cs" />
     <Compile Include="Program.cs" />
@@ -144,9 +149,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="apis\traineddata.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="apis\traineddata.txt" />
     <Content Include="icon.ico" />
     <Content Include="ocr\AspriseOCR.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
