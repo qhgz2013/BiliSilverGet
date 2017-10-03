@@ -1498,6 +1498,35 @@ namespace guazi2
         #endregion
 
 
+        #region Silver2Coin
+        public void SilverToCoin()
+        {
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                var ns = new NetStream();
+                ns.RetryTimes = 3;
+                var url = "http://api.live.bilibili.com/pay/v1/Exchange/silver2coin";
+                var header = new Parameters();
+                header.Add("Origin", "http://live.bilibili.com");
+                header.Add("Referer", "http://live.bilibili.com/exchange");
+                var body = new Parameters();
+                body.Add("platform", "pc");
+                try
+                {
+                    ns.HttpPost(url, body, headerParam: header);
+                    var response = ns.ReadResponseString();
+
+                    _tracer.TraceInfo(response);
+                    ns.Close();
+                }
+                catch (Exception ex)
+                {
+                    _tracer.TraceError(ex.ToString());
+                }
+            });
+        }
+        #endregion
+
         public event NoArgumentDelegation UserInfoUpdated;
         [Serializable]
         public struct UserInfo

@@ -91,6 +91,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
+            this.cAutoToCoin = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -272,6 +273,7 @@
             this.tabPage1.Controls.Add(this.lEventTime);
             this.tabPage1.Controls.Add(this.lGrabTime);
             this.tabPage1.Controls.Add(this.groupBox2);
+            this.tabPage1.Controls.Add(this.cAutoToCoin);
             this.tabPage1.Controls.Add(this.cJoinActivity);
             this.tabPage1.Controls.Add(this.cAutoOnlineHeart);
             this.tabPage1.Controls.Add(this.cAutoJoinSmallTV);
@@ -289,7 +291,7 @@
             // cRecordSaveComment
             // 
             this.cRecordSaveComment.AutoSize = true;
-            this.cRecordSaveComment.Location = new System.Drawing.Point(6, 209);
+            this.cRecordSaveComment.Location = new System.Drawing.Point(6, 235);
             this.cRecordSaveComment.Name = "cRecordSaveComment";
             this.cRecordSaveComment.Size = new System.Drawing.Size(111, 21);
             this.cRecordSaveComment.TabIndex = 6;
@@ -299,7 +301,7 @@
             // lStreamingStat
             // 
             this.lStreamingStat.AutoSize = true;
-            this.lStreamingStat.Location = new System.Drawing.Point(16, 233);
+            this.lStreamingStat.Location = new System.Drawing.Point(16, 259);
             this.lStreamingStat.Name = "lStreamingStat";
             this.lStreamingStat.Size = new System.Drawing.Size(0, 17);
             this.lStreamingStat.TabIndex = 5;
@@ -307,7 +309,7 @@
             // cRecord
             // 
             this.cRecord.AutoSize = true;
-            this.cRecord.Location = new System.Drawing.Point(6, 182);
+            this.cRecord.Location = new System.Drawing.Point(6, 208);
             this.cRecord.Name = "cRecord";
             this.cRecord.Size = new System.Drawing.Size(51, 21);
             this.cRecord.TabIndex = 4;
@@ -374,7 +376,7 @@
             // cJoinActivity
             // 
             this.cJoinActivity.AutoSize = true;
-            this.cJoinActivity.Location = new System.Drawing.Point(5, 141);
+            this.cJoinActivity.Location = new System.Drawing.Point(6, 141);
             this.cJoinActivity.Name = "cJoinActivity";
             this.cJoinActivity.Size = new System.Drawing.Size(123, 21);
             this.cJoinActivity.TabIndex = 0;
@@ -385,7 +387,7 @@
             // cAutoOnlineHeart
             // 
             this.cAutoOnlineHeart.AutoSize = true;
-            this.cAutoOnlineHeart.Location = new System.Drawing.Point(5, 114);
+            this.cAutoOnlineHeart.Location = new System.Drawing.Point(6, 114);
             this.cAutoOnlineHeart.Name = "cAutoOnlineHeart";
             this.cAutoOnlineHeart.Size = new System.Drawing.Size(73, 21);
             this.cAutoOnlineHeart.TabIndex = 0;
@@ -725,6 +727,17 @@
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
+            // cAutoToCoin
+            // 
+            this.cAutoToCoin.AutoSize = true;
+            this.cAutoToCoin.Location = new System.Drawing.Point(6, 168);
+            this.cAutoToCoin.Name = "cAutoToCoin";
+            this.cAutoToCoin.Size = new System.Drawing.Size(111, 21);
+            this.cAutoToCoin.TabIndex = 0;
+            this.cAutoToCoin.Text = "自动瓜子换硬币";
+            this.cAutoToCoin.UseVisualStyleBackColor = true;
+            this.cAutoToCoin.CheckedChanged += new System.EventHandler(this.cAutoToCoin_CheckedChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -819,6 +832,7 @@
         private System.Windows.Forms.Label lRunTime;
         private System.Windows.Forms.CheckBox cRecordSaveComment;
         private System.Windows.Forms.LinkLabel lblShowCookie;
+        private System.Windows.Forms.CheckBox cAutoToCoin;
     }
 }
 

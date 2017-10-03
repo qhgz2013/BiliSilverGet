@@ -94,6 +94,7 @@ namespace guazi2
             cJoinActivity.Checked = json.Value<bool>("JoinActivity");
             cRecord.Checked = json.Value<bool>("Record");
             cRecordSaveComment.Checked = json.Value<bool>("RecordSaveComment");
+            cAutoToCoin.Checked = json.Value<bool>("AutoToCoin");
 
             var stat = json.Value<JObject>("Statistics");
             _global_total_comment_count = stat.Value<ulong>("TotalCommentRecv");
@@ -119,6 +120,7 @@ namespace guazi2
             json.Add("JoinActivity", cJoinActivity.Checked);
             json.Add("Record", cRecord.Checked);
             json.Add("RecordSaveComment", cRecordSaveComment.Checked);
+            json.Add("AutoToCoin", cAutoToCoin.Checked);
 
             var stat = new JObject();
             stat.Add("TotalCommentRecv", _global_total_comment_count);
@@ -190,6 +192,7 @@ namespace guazi2
                 cAutoSign_CheckedChanged(null, new EventArgs());
                 cRecord_CheckedChanged(null, new EventArgs());
                 cJoinActivity_CheckedChanged(null, new EventArgs());
+                cAutoToCoin_CheckedChanged(null, new EventArgs());
             }));
         }
         private void tRoomID_KeyPress(object sender, KeyPressEventArgs e)
@@ -618,6 +621,14 @@ namespace guazi2
             //var t = new VBUtil.CookieDebugger();
             //t.Show(this);
             MessageBox.Show("Emmmmm.....代码整改了...这个功能还没好");
+        }
+
+        private void cAutoToCoin_CheckedChanged(object sender, EventArgs e)
+        {
+            if (cAutoToCoin.Checked)
+            {
+                _guazi?.SilverToCoin();
+            }
         }
 
         private void cRecord_CheckedChanged(object sender, EventArgs e)
