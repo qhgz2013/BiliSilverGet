@@ -299,6 +299,7 @@ namespace guazi2
             {
                 var request = new NetStream();
                 var url = "http://api.live.bilibili.com/live/getInfo?roomid=" + roomid;
+                //var url = "http://api.live.bilibili.com/live/getRoomInfoExt?roomid=" + roomid;
                 try
                 {
                     string str;
@@ -375,7 +376,7 @@ namespace guazi2
         public void StartSilverGrabbing()
         {
             _tracer.TraceInfo("StartSilverGrabbing called: void");
-
+            if (_roomID == 0) return;
             if (_grabSilverThread == null || (_grabSilverThread.ThreadState & (ThreadState.Aborted | ThreadState.Stopped)) != 0)
             {
                 _grabSilverThread = new Thread(_silverThreadCallback);
@@ -401,6 +402,9 @@ namespace guazi2
             _tracer.TraceInfo("SilverThread started");
             SilverGrabStarted?.Invoke();
 
+            var header = new Parameters();
+            header.Add("Origin", "http://live.bilibili.com");
+            header.Add("Referer", "http://live.bilibili.com/" + _roomURL);
             try
             {
                 while (true)
@@ -416,7 +420,7 @@ namespace guazi2
                         string response_str;
                         do
                         {
-                            request.HttpGet(get_new_tasks_url);
+                            request.HttpGet(get_new_tasks_url, header);
                             response_str = request.ReadResponseString();
                             request.Close();
                         } while (do_refresh_check(response_str));
@@ -473,7 +477,7 @@ namespace guazi2
                         try
                         {
                             _tracer.TraceInfo("Getting captcha image");
-                            request.HttpGet(captcha_url);
+                            request.HttpGet(captcha_url, header);
                             captcha = Image.FromStream(request.Stream);
                         }
                         catch (ThreadAbortException) { throw; }
@@ -526,7 +530,7 @@ namespace guazi2
                         string response;
                         do
                         {
-                            request.HttpGet(award_url, urlParam: award_param);
+                            request.HttpGet(award_url, header, award_param);
                             response = request.ReadResponseString();
                             request.Close();
                         } while (do_refresh_check(response));
@@ -816,11 +820,10 @@ namespace guazi2
             var param = new Parameters();
 
             var url = "http://api.live.bilibili.com/giftBag/send";
-            //xhr request
+
             var header_param = new Parameters();
-            header_param.Add("X-Requested-With", "XMLHttpRequest");
             header_param.Add("Origin", "http://live.bilibili.com");
-            header_param.Add("Referer", "http://live.bilibili.com/" + room_id);
+            header_param.Add("Referer", "http://live.bilibili.com/" + _roomURL);
 
             param.Add("giftId", gift_id);
             param.Add("roomid", room_id);
@@ -1455,14 +1458,20 @@ namespace guazi2
         {
             _tracer.TraceInfo("JoinSmallTV called");
             _tracer.TraceInfo("[SmallTV] roomid: " + roomid + ", tv_id: " + tvid);
-            var url = "http://live.bilibili.com/SmallTV/join?roomid=" + roomid + "&id=" + tvid;
+
+            var url = "http://api.live.bilibili.com/SmallTV/join?roomid=" + roomid + "&id=" + tvid;
             var request = get_request();
+            var header_param = new Parameters();
+            header_param.Add("Origin", "http://live.bilibili.com");
+            header_param.Add("Referer", "http://live.bilibili.com/" + _roomURL);
             try
             {
                 string response;
                 do
                 {
-                    request.HttpGet(url);
+                    var rnd = new Random();
+                    Thread.Sleep(rnd.Next(3000, 9000));
+                    request.HttpGet(url, header_param);
                     response = request.ReadResponseString();
                     request.Close();
                 } while (do_refresh_check(response));
@@ -1601,7 +1610,6 @@ namespace guazi2
                 var url = "http://api.live.bilibili.com/User/userOnlineHeart";
 
                 var xhr_param = new Parameters();
-                xhr_param.Add("X-Requested-With", "XMLHttpRequest");
                 xhr_param.Add("Origin", "http://live.bilibili.com");
                 xhr_param.Add("Referer", "http://live.bilibili.com/" + _roomURL);
 
@@ -1675,14 +1683,18 @@ namespace guazi2
         {
             _tracer.TraceInfo("eventThd started");
 
+            var xhr_param = new Parameters();
+            xhr_param.Add("Origin", "http://live.bilibili.com");
+            xhr_param.Add("Referer", "http://live.bilibili.com/" + _roomURL);
+
             try
             {
                 var request = get_request();
                 if (_roomID == 0) throw new ArgumentNullException("Roomid");
-                var url1 = "http://api.live.bilibili.com/eventRoom/index?ruid=" + _roomID;
-                var url2 = "http://api.live.bilibili.com/eventRoom/heart";
+                var url1 = "http://api.live.bilibili.com/eventRoom/index?ruid=" + _roomInfo["data"].Value<string>("MASTERID");//_roomID;
+                var url2 = "http://api.live.bilibili.com/eventRoom/heart?roomid=" + _roomID;
 
-                request.HttpGet(url1);
+                request.HttpGet(url1, xhr_param);
                 var response = request.ReadResponseString();
                 request.Close();
 
@@ -1691,13 +1703,6 @@ namespace guazi2
                 var json = JsonConvert.DeserializeObject(response) as JObject;
                 var heartTime = json["data"].Value<int>("heartTime");
 
-                var xhr_param = new Parameters();
-                xhr_param.Add("X-Requested-With", "XMLHttpRequest");
-                xhr_param.Add("Origin", "http://live.bilibili.com");
-                xhr_param.Add("Referer", "http://live.bilibili.com/" + _roomURL);
-
-                var roomid = new Parameters();
-                roomid.Add("roomid", _roomID);
 
                 heartTime *= 1000;
                 bool can_continue = json["data"].Value<bool>("heart");
@@ -1710,7 +1715,7 @@ namespace guazi2
                     }
                     do
                     {
-                        request.HttpPost(url2, roomid, headerParam: xhr_param);
+                        request.HttpGet(url2, headerParam: xhr_param);
                         response = request.ReadResponseString();
                         request.Close();
                     } while (do_refresh_check(response));
@@ -1733,6 +1738,7 @@ namespace guazi2
         public void StartEventHeartbeat()
         {
             _tracer.TraceInfo("StartEventHeartbeat called");
+            if (_roomID == 0) return;
             if (_eventThd == null || (_eventThd.ThreadState & (ThreadState.Aborted | ThreadState.Stopped)) != 0)
             {
                 _eventThd = new Thread(_eventThdCallback);
