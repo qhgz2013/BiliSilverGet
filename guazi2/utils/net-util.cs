@@ -152,7 +152,7 @@ namespace guazi2
             {
                 var n = new List<KeyValuePair<string, string>>();
                 IOrderedEnumerable<KeyValuePair<string, string>> sec = null;
-                if (desc) sec = from KeyValuePair<string, string> item in _list orderby item.Key ascending select item;
+                if (!desc) sec = from KeyValuePair<string, string> item in _list orderby item.Key ascending select item;
                 else sec = from KeyValuePair<string, string> item in _list orderby item.Key descending select item;
                 foreach (var item in sec)
                 {

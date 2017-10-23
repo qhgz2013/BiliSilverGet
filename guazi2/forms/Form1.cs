@@ -29,7 +29,7 @@ namespace guazi2
             NetUtils.NetStream.LoadCookie();
 
             //check cookie
-            if (!frmLogin.CheckLoginStatus())
+            if (!api.IsLogined)
             {
                 var login_form = new frmLogin();
                 login_form.ShowDialog(this);
@@ -73,7 +73,7 @@ namespace guazi2
         {
 
             NetUtils.NetStream.SaveCookie();
-            if (frmLogin.CheckLoginStatus())
+            if (api.IsLogined)
                 save_config();
         }
 
