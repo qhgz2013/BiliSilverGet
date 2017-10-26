@@ -255,7 +255,7 @@ namespace guazi2
             //从网页上获取
             if (roomURL > 0)
             {
-                var url = "http://live.bilibili.com/" + roomURL;
+                var url = "https://live.bilibili.com/" + roomURL;
                 var request = get_request();
                 try
                 {
@@ -298,8 +298,8 @@ namespace guazi2
             if (roomid > 0)
             {
                 var request = new NetStream();
-                var url = "http://api.live.bilibili.com/live/getInfo?roomid=" + roomid;
-                //var url = "http://api.live.bilibili.com/live/getRoomInfoExt?roomid=" + roomid;
+                var url = "https://api.live.bilibili.com/live/getInfo?roomid=" + roomid;
+                //var url = "https://api.live.bilibili.com/live/getRoomInfoExt?roomid=" + roomid;
                 try
                 {
                     string str;
@@ -403,14 +403,14 @@ namespace guazi2
             SilverGrabStarted?.Invoke();
 
             var header = new Parameters();
-            header.Add("Origin", "http://live.bilibili.com");
-            header.Add("Referer", "http://live.bilibili.com/" + _roomURL);
+            header.Add("Origin", "https://live.bilibili.com");
+            header.Add("Referer", "https://live.bilibili.com/" + _roomURL);
             try
             {
                 while (true)
                 {
                     //获取新的瓜子宝箱
-                    var get_new_tasks_url = "http://live.bilibili.com/FreeSilver/getCurrentTask";
+                    var get_new_tasks_url = "https://live.bilibili.com/FreeSilver/getCurrentTask";
                     var request = get_request();
                     _tracer.TraceInfo("Getting new silver task");
                     JObject json = null;
@@ -470,7 +470,7 @@ namespace guazi2
                     Image captcha = null;
                     int ocr_count = 0;
                     int captcha_result = -1;
-                    var captcha_url = "http://live.bilibili.com/FreeSilver/getCaptcha?ts=" + get_timestamp();
+                    var captcha_url = "https://live.bilibili.com/FreeSilver/getCaptcha?ts=" + get_timestamp();
 
                     do
                     {
@@ -518,7 +518,7 @@ namespace guazi2
 
 
                     //领取宝箱
-                    var award_url = "http://live.bilibili.com/FreeSilver/getAward";
+                    var award_url = "https://live.bilibili.com/FreeSilver/getAward";
                     var award_param = new Parameters();
                     award_param.Add("time_start", _grabsilverTimeStart);
                     award_param.Add("time_end", _grabSilverTimeEnd);
@@ -588,8 +588,8 @@ namespace guazi2
         private void _signThreadCallback()
         {
             _tracer.TraceInfo("SignThread started");
-            var url = "http://api.live.bilibili.com/sign/doSign";
-            var info_url = "http://api.live.bilibili.com/sign/GetSignInfo";
+            var url = "https://api.live.bilibili.com/sign/doSign";
+            var info_url = "https://api.live.bilibili.com/sign/GetSignInfo";
 
             var request = get_request();
             try
@@ -664,8 +664,8 @@ namespace guazi2
         private void _getGiftThreadCallback()
         {
             _tracer.TraceInfo("getGiftThread started");
-            var url1 = "http://api.live.bilibili.com/giftBag/sendDaily";
-            var url2 = "http://api.live.bilibili.com/giftBag/getSendGift";
+            var url1 = "https://api.live.bilibili.com/giftBag/sendDaily";
+            var url2 = "https://api.live.bilibili.com/giftBag/getSendGift";
             var request = get_request();
             try
             {
@@ -734,7 +734,7 @@ namespace guazi2
             _tracer.TraceInfo("GetPlayerBag called");
 
             var ret = new List<BagItem>();
-            var url = "http://api.live.bilibili.com/gift/playerBag";
+            var url = "https://api.live.bilibili.com/gift/playerBag";
             var request = get_request();
             try
             {
@@ -802,7 +802,7 @@ namespace guazi2
             try
             {
                 int masterid = _roomInfo["data"].Value<int>("MASTERID");
-                string token = NetStream.DefaultCookieContainer.GetCookies(new Uri("http://live.bilibili.com/"))["LIVE_LOGIN_DATA"].Value;
+                string token = NetStream.DefaultCookieContainer.GetCookies(new Uri("https://live.bilibili.com/"))["LIVE_LOGIN_DATA"].Value;
                 SendItemRaw(item.gift_id, item.bag_id, item.gift_num, _roomID, masterid, token);
             }
             catch (Exception ex)
@@ -819,11 +819,11 @@ namespace guazi2
             var request = get_request();
             var param = new Parameters();
 
-            var url = "http://api.live.bilibili.com/giftBag/send";
+            var url = "https://api.live.bilibili.com/giftBag/send";
 
             var header_param = new Parameters();
-            header_param.Add("Origin", "http://live.bilibili.com");
-            header_param.Add("Referer", "http://live.bilibili.com/" + _roomURL);
+            header_param.Add("Origin", "https://live.bilibili.com");
+            header_param.Add("Referer", "https://live.bilibili.com/" + _roomURL);
 
             param.Add("giftId", gift_id);
             param.Add("roomid", room_id);
@@ -946,7 +946,7 @@ namespace guazi2
                     //从api返回值中获取ip和port
                     _tracer.TraceInfo("Getting comment server domain from Internet");
                     var request = get_request();
-                    var url = "http://live.bilibili.com/api/player?id=cid:" + _roomID;
+                    var url = "https://live.bilibili.com/api/player?id=cid:" + _roomID;
 
                     IPAddress ipaddr = IPAddress.None;
                     int port = 0;
@@ -1423,7 +1423,7 @@ namespace guazi2
                 _tracer.TraceInfo("posting comment: " + msg);
                 try
                 {
-                    var url = "http://live.bilibili.com/msg/send";
+                    var url = "https://live.bilibili.com/msg/send";
                     string response;
                     do
                     {
@@ -1459,11 +1459,11 @@ namespace guazi2
             _tracer.TraceInfo("JoinSmallTV called");
             _tracer.TraceInfo("[SmallTV] roomid: " + roomid + ", tv_id: " + tvid);
 
-            var url = "http://api.live.bilibili.com/SmallTV/join?roomid=" + roomid + "&id=" + tvid;
+            var url = "https://api.live.bilibili.com/SmallTV/join?roomid=" + roomid + "&id=" + tvid;
             var request = get_request();
             var header_param = new Parameters();
-            header_param.Add("Origin", "http://live.bilibili.com");
-            header_param.Add("Referer", "http://live.bilibili.com/" + _roomURL);
+            header_param.Add("Origin", "https://live.bilibili.com");
+            header_param.Add("Referer", "https://live.bilibili.com/" + _roomURL);
             try
             {
                 string response;
@@ -1514,10 +1514,10 @@ namespace guazi2
             {
                 var ns = new NetStream();
                 ns.RetryTimes = 3;
-                var url = "http://api.live.bilibili.com/pay/v1/Exchange/silver2coin";
+                var url = "https://api.live.bilibili.com/pay/v1/Exchange/silver2coin";
                 var header = new Parameters();
-                header.Add("Origin", "http://live.bilibili.com");
-                header.Add("Referer", "http://live.bilibili.com/exchange");
+                header.Add("Origin", "https://live.bilibili.com");
+                header.Add("Referer", "https://live.bilibili.com/exchange");
                 var body = new Parameters();
                 body.Add("platform", "pc");
                 try
@@ -1554,7 +1554,7 @@ namespace guazi2
             _tracer.TraceInfo("GetUserInfo called");
             var ret = new UserInfo();
             var request = get_request();
-            var url = "http://api.live.bilibili.com/User/getUserInfo";
+            var url = "https://api.live.bilibili.com/User/getUserInfo";
             try
             {
                 string response;
@@ -1607,11 +1607,11 @@ namespace guazi2
             {
                 var next_update_time = DateTime.Now;
                 var request = get_request();
-                var url = "http://api.live.bilibili.com/User/userOnlineHeart";
+                var url = "https://api.live.bilibili.com/User/userOnlineHeart";
 
                 var xhr_param = new Parameters();
-                xhr_param.Add("Origin", "http://live.bilibili.com");
-                xhr_param.Add("Referer", "http://live.bilibili.com/" + _roomURL);
+                xhr_param.Add("Origin", "https://live.bilibili.com");
+                xhr_param.Add("Referer", "https://live.bilibili.com/" + _roomURL);
 
                 while (true)
                 {
@@ -1684,15 +1684,15 @@ namespace guazi2
             _tracer.TraceInfo("eventThd started");
 
             var xhr_param = new Parameters();
-            xhr_param.Add("Origin", "http://live.bilibili.com");
-            xhr_param.Add("Referer", "http://live.bilibili.com/" + _roomURL);
+            xhr_param.Add("Origin", "https://live.bilibili.com");
+            xhr_param.Add("Referer", "https://live.bilibili.com/" + _roomURL);
 
             try
             {
                 var request = get_request();
                 if (_roomID == 0) throw new ArgumentNullException("Roomid");
-                var url1 = "http://api.live.bilibili.com/eventRoom/index?ruid=" + _roomInfo["data"].Value<string>("MASTERID");//_roomID;
-                var url2 = "http://api.live.bilibili.com/eventRoom/heart?roomid=" + _roomID;
+                var url1 = "https://api.live.bilibili.com/eventRoom/index?ruid=" + _roomInfo["data"].Value<string>("MASTERID");//_roomID;
+                var url2 = "https://api.live.bilibili.com/eventRoom/heart?roomid=" + _roomID;
 
                 request.HttpGet(url1, xhr_param);
                 var response = request.ReadResponseString();
@@ -1766,7 +1766,7 @@ namespace guazi2
             _roomRoundInfoStartTime = 0;
             _roomRoundInfo = null;
             if (_roomID == 0) return;
-            var url = "http://live.bilibili.com/live/getRoundPlayVideo?room_id=" + _roomID;
+            var url = "https://live.bilibili.com/live/getRoundPlayVideo?room_id=" + _roomID;
             var request = get_request();
             try
             {
@@ -1863,7 +1863,7 @@ namespace guazi2
                     {
                         //获取下载的url
                         _tracer.TraceInfo("Getting streaming url");
-                        var url = "http://live.bilibili.com/api/playurl?player=1&cid=" + _roomID + "&quality=0";
+                        var url = "https://live.bilibili.com/api/playurl?player=1&cid=" + _roomID + "&quality=0";
                         string response;
                         do
                         {

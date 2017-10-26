@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using guazi2.NetUtils;
 using System.Threading;
 using System.Net;
+using System.IO;
 
 namespace guazi2
 {
@@ -30,7 +31,7 @@ namespace guazi2
         //private const string _URL_QRLOGIN_URL = "https://passport.bilibili.com/qrcode/getLoginUrl";
         //private const string _URL_QRLOGIN_INFO = "https://passport.bilibili.com/qrcode/getLoginInfo";
         //private const string _URL_QRLOGIN_CONFIRM = "https://passport.bilibili.com/qrcode/login/confirm";
-
+        private const string _TOKEN_FILE_NAME = "token.json";
         #endregion
 
         #region members
@@ -41,8 +42,8 @@ namespace guazi2
         private static DateTime _expire_time; //access token失效时间
         private static uint _mid; //用户id
         private static string _uname; //用户名称
-        private static string _userid;
-        public static bool IsLogined { get { return !_check_sso_expired(); /*_mid != 0;*/ } }
+        private static string _userid; //用户id
+        public static bool IsLogined { get { return !string.IsNullOrEmpty(_access_token); /*_mid != 0;*/ } }
         public static string AccessToken { get { return _access_token; } }
         public static string RefreshToken { get { return _refresh_token; } }
         public static int AppID { get { return _appid; } }
@@ -274,6 +275,41 @@ namespace guazi2
             return !_check_sso_expired();
 
         }
+        private static void _load_token()
+        {
+            if (!File.Exists(_TOKEN_FILE_NAME)) return;
+            try
+            {
+                var data = File.ReadAllText(_TOKEN_FILE_NAME);
+                if (string.IsNullOrEmpty(data)) return;
+                var json = JsonConvert.DeserializeObject(data) as JObject;
+
+                _access_token = json.Value<string>("access_token");
+                _refresh_token = json.Value<string>("refresh_token");
+                _appid = json.Value<int>("appid");
+                _expire_time = util.FromUnixTimestamp(json.Value<long>("expire_time"));
+                _mid = json.Value<uint>("mid");
+                _uname = json.Value<string>("uname");
+                _userid = json.Value<string>("userid");
+            }
+            catch (Exception ex)
+            {
+                Tracer.GlobalTracer.TraceError(ex.ToString());
+            }
+        }
+        private static void _save_token()
+        {
+            var json = new JObject();
+            json.Add("access_token", _access_token == null ? string.Empty : _access_token);
+            json.Add("refresh_token", _refresh_token == null ? string.Empty : _refresh_token);
+            json.Add("appid", _appid);
+            json.Add("expire_time", (long)util.ToUnixTimestamp(_expire_time));
+            json.Add("mid", _mid);
+            json.Add("uname", _uname == null ? string.Empty : _uname);
+            json.Add("userid", _userid == null ? string.Empty : _userid);
+
+            File.WriteAllText(_TOKEN_FILE_NAME, JsonConvert.SerializeObject(json));
+        }
         #endregion
 
 
@@ -326,7 +362,8 @@ namespace guazi2
                     catch { }
                     while (!_sso_auth())
                         Thread.Sleep(3000);
-                    NetStream.SaveCookie();
+                    //NetStream.SaveCookie();
+                    _save_token();
                     return true;
                 }
             }
@@ -342,7 +379,10 @@ namespace guazi2
         }
         static api()
         {
-            NetStream.LoadCookie();
+            //NetStream.LoadCookie();
+            _load_token();
+            if (!string.IsNullOrEmpty(_access_token))
+                _sso_auth();
         }
         #endregion
     }
