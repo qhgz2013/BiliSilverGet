@@ -259,27 +259,21 @@ namespace guazi2
                 var request = get_request();
                 try
                 {
-                    string str;
-                    do
-                    {
-                        request.HttpGet(url);
-                        str = request.ReadResponseString();
-                        request.Close();
-                    } while (do_refresh_check(str));
+                    request.HttpGet(url);
+                    url = request.HTTP_Response.ResponseUri.ToString();
+                    request.Close();
 
-                    var match = Regex.Match(str, @"var\s+ROOMID\s+=\s+(\d+);");
+                    var match = Regex.Match(url, "http(s?)://live\\.bilibili\\.com/.*?/(?<room_id>\\d+)");
                     if (match.Success)
                     {
-                        int id = int.Parse(match.Result("$1"));
+                        int id = int.Parse(match.Result("${room_id}"));
                         _tracer.TraceInfo("Returned RoomID from HTML: " + _roomURL + " => " + id);
-                        if (traceResponseString) _tracer.TraceInfo(str);
                         _roomMapping.Add(roomURL, id);
                         return id;
                     }
                     else
                     {
                         _tracer.TraceError("Could not get RoomID from Internet!");
-                        _tracer.TraceError(str);
                         return 0;
                     }
                 }
