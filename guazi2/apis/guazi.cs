@@ -255,18 +255,18 @@ namespace guazi2
             //从网页上获取
             if (roomURL > 0)
             {
-                var url = "https://live.bilibili.com/" + roomURL;
+                var url = "https://api.live.bilibili.com/room/v1/Room/room_init?id=" + roomURL;
                 var request = get_request();
                 try
                 {
                     request.HttpGet(url);
-                    url = request.HTTP_Response.ResponseUri.ToString();
+                    var response = request.ReadResponseString();
                     request.Close();
+                    var json = JsonConvert.DeserializeObject(response) as JObject;
 
-                    var match = Regex.Match(url, "http(s?)://live\\.bilibili\\.com/.*?/(?<room_id>\\d+)");
-                    if (match.Success)
+                    if (json.Value<int>("code") == 0)
                     {
-                        int id = int.Parse(match.Result("${room_id}"));
+                        int id = json["data"].Value<int>("room_id");
                         _tracer.TraceInfo("Returned RoomID from HTML: " + _roomURL + " => " + id);
                         _roomMapping.Add(roomURL, id);
                         return id;
