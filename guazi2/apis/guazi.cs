@@ -94,15 +94,15 @@ namespace guazi2
                 StartReceiveComment();
 
             //更新轮播信息
-            if (LiveStatus == "ROUND")
-                GetRoundInfo();
-            else
-            {
-                _roomRoundInfo = null;
-                _roomRoundInfoStartTime = 0;
-                _prepareStartTime = DateTime.MinValue;
-                _roundVideoTime = 0;
-            }
+            //if (LiveStatus == "ROUND")
+            //    GetRoundInfo();
+            //else
+            //{
+            _roomRoundInfo = null;
+            _roomRoundInfoStartTime = 0;
+            _prepareStartTime = DateTime.MinValue;
+            _roundVideoTime = 0;
+            //}
 
             ChangeRoomIDCompleted?.Invoke();
             RoomInfoUpdated?.Invoke();
@@ -115,25 +115,25 @@ namespace guazi2
             get
             {
                 if (_roomInfo == null) return "";
-                return _roomInfo["data"].Value<string>("ROOMTITLE");
+                return _roomInfo["data"].Value<string>("title");
             }
         }
         //UP主名称
-        public string AnchorName
-        {
-            get
-            {
-                if (_roomInfo == null) return "";
-                return _roomInfo["data"].Value<string>("ANCHOR_NICK_NAME");
-            }
-        }
+        //public string AnchorName
+        //{
+        //    get
+        //    {
+        //        if (_roomInfo == null) return "";
+        //        return _roomInfo["data"].Value<string>("ANCHOR_NICK_NAME");
+        //    }
+        //}
         //直播间状态
-        public string LiveStatus
+        public int LiveStatus
         {
             get
             {
-                if (_roomInfo == null) return "";
-                return _roomInfo["data"].Value<string>("LIVE_STATUS");
+                if (_roomInfo == null) return 0;
+                return _roomInfo["data"].Value<int>("live_status");
             }
         }
         //直播/轮播开始的Unix时间戳
@@ -142,11 +142,22 @@ namespace guazi2
             get
             {
                 if (_roomInfo == null) return 0;
-                if (LiveStatus == "LIVE")
-                    return _roomInfo["data"].Value<ulong>("LIVE_TIMELINE");
-                else if (LiveStatus == "ROUND")
-                    return _roomRoundInfoStartTime;
-                return 0;
+                if (LiveStatus != 0)
+                {
+                    var str =  _roomInfo["data"].Value<string>("live_time");
+                    var match = Regex.Match(str, @"^(?<yr>\d+)-(?<mo>\d+)-(?<dy>\d+)\s(?<hr>\d+):(?<mi>\d+):(?<sc>\d+)$");
+                    if (match.Success)
+                    {
+                        return (ulong)util.ToUnixTimestamp(new DateTime(int.Parse(match.Result("${yr}")),
+                            int.Parse(match.Result("${mo}")), int.Parse(match.Result("${dy}")),
+                            int.Parse(match.Result("${hr}")), int.Parse(match.Result("${mi}")), int.Parse(match.Result("${sc}"))
+                            ));
+                    }
+                    else
+                        return 0;
+                }
+                else
+                    return 0;
             }
         }
         //直播/轮播开始的DateTime
@@ -180,7 +191,7 @@ namespace guazi2
             {
                 if (_roomInfo == null) return false;
                 //return _roomInfo["data"].Value<int>("ROUND_STATUS") == 1;
-                return LiveStatus == "ROUND";
+                return false; //LiveStatus == "ROUND";
             }
         }
         //封面url
@@ -189,16 +200,7 @@ namespace guazi2
             get
             {
                 if (_roomInfo == null) return "";
-                return _roomInfo["data"].Value<string>("COVER");
-            }
-        }
-        //粉丝数
-        public int FansCount
-        {
-            get
-            {
-                if (_roomInfo == null) return 0;
-                return _roomInfo["data"].Value<int>("FANS_COUNT");
+                return _roomInfo["data"].Value<string>("user_cover");
             }
         }
         //轮播视频标题
@@ -292,7 +294,7 @@ namespace guazi2
             if (roomid > 0)
             {
                 var request = new NetStream();
-                var url = "https://api.live.bilibili.com/live/getInfo?roomid=" + roomid;
+                var url = "https://api.live.bilibili.com/room/v1/Room/get_info?room_id=" + roomid;
                 //var url = "https://api.live.bilibili.com/live/getRoomInfoExt?roomid=" + roomid;
                 try
                 {
@@ -728,8 +730,22 @@ namespace guazi2
             _tracer.TraceInfo("GetPlayerBag called");
 
             var ret = new List<BagItem>();
-            var url = "https://api.live.bilibili.com/gift/playerBag";
+            var url = "https://api.live.bilibili.com/AppBag/playerBag";
+            var param = new Parameters();
+            param.Add("_device", "android");
+            param.Add("_hwid", "QiFCcxZzQHEXIUB3CzkLOQszUmRXYAE5XyNfa15nVGJXNQc"); //unknown
+            param.Add("access_key", api.AccessToken);
+            param.Add("appkey", api.APPKEY);
+            param.Add("build", "513000");
+            param.Add("mobi_app", "android");
+            param.Add("platform", "android");
+            param.Add("src", "wandoujia");
+            param.Add("trace_id", DateTime.Now.ToString("yyyyMMddHHmmss") + "00000");
+            param.Add("ts", (long)util.ToUnixTimestamp(DateTime.Now));
+            param.Add("version", "5.13.0.513000");
+            param.Add("sign", api.CalculateSign(param));
             var request = get_request();
+            request.UserAgent = api.ANDROID_USER_AGENT;
             try
             {
                 _tracer.TraceInfo("Getting player bag");
@@ -751,7 +767,13 @@ namespace guazi2
                     int gift_id = item.Value<int>("gift_id");
                     int num = item.Value<int>("gift_num");
                     int id = item.Value<int>("id");
-                    string expireat = item.Value<string>("expireat");
+                    //string expireat = item.Value<string>("expireat");
+                    int expire_time = item.Value<int>("expireat");
+                    string expireat = string.Empty;
+                    if (expire_time > 86400) expireat = Math.Floor(expire_time / 86400.0).ToString() + "天";
+                    else if (expire_time > 3600) expireat = Math.Floor(expire_time / 3600.0).ToString() + "小时";
+                    else if (expire_time > 60) expireat = Math.Floor(expire_time / 60.0).ToString() + "分钟";
+                    else expireat = expire_time.ToString() + "秒";
                     string gift_type = item.Value<string>("gift_type");
                     string gift_name = item.Value<string>("gift_name");
                     string gift_price = item.Value<string>("gift_price");
@@ -795,9 +817,8 @@ namespace guazi2
             if (_roomInfo == null) return;
             try
             {
-                int masterid = _roomInfo["data"].Value<int>("MASTERID");
-                string token = NetStream.DefaultCookieContainer.GetCookies(new Uri("https://live.bilibili.com/"))["LIVE_LOGIN_DATA"].Value;
-                SendItemRaw(item.gift_id, item.bag_id, item.gift_num, _roomID, masterid, token);
+                int ruid = _roomInfo["data"].Value<int>("uid");
+                SendItemRaw(item.gift_id, item.bag_id, item.gift_num, _roomID, ruid);
             }
             catch (Exception ex)
             {
@@ -805,29 +826,37 @@ namespace guazi2
             }
         }
         //送出道具（全手动指定参数）
-        public void SendItemRaw(int gift_id, int bag_id, int gift_num, int room_id, int master_id, string token)
+        public void SendItemRaw(int gift_id, int bag_id, int gift_num, int room_id, int ruid)
         {
-            _tracer.TraceInfo("SendItemRaw called: int gift_id=" + gift_id + ", int bag_id=" + bag_id + ", int gift_num=" + gift_num + ", room_id=" + room_id + ", master_id=" + master_id + ", token=" + token);
-            if (room_id <= 0 || gift_id <= 0 || gift_num <= 0 || master_id <= 0 || string.IsNullOrEmpty(token)) return;
+            _tracer.TraceInfo("SendItemRaw called: int gift_id=" + gift_id + ", int bag_id=" + bag_id + ", int gift_num=" + gift_num + ", room_id=" + room_id + ", ruid=" + ruid);
+            if (room_id <= 0 || gift_id <= 0 || gift_num <= 0 || ruid <= 0) return;
 
             var request = get_request();
             var param = new Parameters();
 
-            var url = "https://api.live.bilibili.com/giftBag/send";
-
-            var header_param = new Parameters();
-            header_param.Add("Origin", "https://live.bilibili.com");
-            header_param.Add("Referer", "https://live.bilibili.com/" + _roomURL);
+            var url = "https://api.live.bilibili.com/AppBag/send";
+            request.UserAgent = api.ANDROID_USER_AGENT;
+            var query_param = new Parameters();
+            query_param.Add("_device", "android");
+            query_param.Add("_hwid", "QiFCcxZzQHEXIUB3CzkLOQszUmRXYAE5XyNfa15nVGJXNQc");
+            query_param.Add("access_key", api.AccessToken);
+            query_param.Add("appkey", api.APPKEY);
+            query_param.Add("build", "513000");
+            query_param.Add("mobi_app", "android");
+            query_param.Add("platform", "android");
+            query_param.Add("src", "wandoujia");
+            query_param.Add("trace_id", DateTime.Now.ToString("yyyyMMddHHmmss") + "00000");
+            query_param.Add("ts", (long)util.ToUnixTimestamp(DateTime.Now));
+            query_param.Add("version", "5.13.0.513000");
+            query_param.Add("sign", api.CalculateSign(query_param));
 
             param.Add("giftId", gift_id);
             param.Add("roomid", room_id);
-            param.Add("ruid", master_id);
+            param.Add("ruid", ruid);
             param.Add("num", gift_num);
-            param.Add("coinType", "silver");
-            param.Add("Bag_id", bag_id);
+            param.Add("bag_id", bag_id);
             param.Add("timestamp", get_timestamp());
             param.Add("rnd", get_timestamp());
-            param.Add("token", token);
 
             try
             {
@@ -835,7 +864,7 @@ namespace guazi2
                 string result;
                 do
                 {
-                    request.HttpPost(url, param, headerParam: header_param);
+                    request.HttpPost(url, param, urlParam: query_param);
                     result = request.ReadResponseString();
                     request.Close();
                 } while (do_refresh_check(result));
@@ -1583,8 +1612,8 @@ namespace guazi2
             {
                 _roomInfo = get_roomInfo(_roomID);
 
-                if (LiveStatus == "ROUND")
-                    GetRoundInfo();
+                //if (LiveStatus == "ROUND")
+                //    GetRoundInfo();
                 RoomInfoUpdated?.Invoke();
             });
         }
@@ -1685,7 +1714,7 @@ namespace guazi2
             {
                 var request = get_request();
                 if (_roomID == 0) throw new ArgumentNullException("Roomid");
-                var url1 = "https://api.live.bilibili.com/eventRoom/index?ruid=" + _roomInfo["data"].Value<string>("MASTERID");//_roomID;
+                var url1 = "https://api.live.bilibili.com/eventRoom/index?ruid=" + _roomInfo["data"].Value<int>("uid");//_roomID;
                 var url2 = "https://api.live.bilibili.com/eventRoom/heart?roomid=" + _roomID;
 
                 request.HttpGet(url1, xhr_param);
@@ -1848,7 +1877,7 @@ namespace guazi2
                 do
                 {
                     //非直播状态循环检查
-                    if (LiveStatus != "LIVE")
+                    if (LiveStatus == 0) //!= "LIVE")
                     {
                         Thread.Sleep(1000);
                         continue;
@@ -1950,7 +1979,7 @@ namespace guazi2
                     Thread.Sleep(1000);
                     StreamingSpeedUpdated?.Invoke(_streamingStartTime, _streamingSpeed, _streamingLength);
                     _streamingSpeed = 0;
-                } while (LiveStatus == "LIVE");
+                } while (LiveStatus != 0); // == "LIVE");
             }
             catch (ThreadAbortException) { }
             catch (Exception ex)

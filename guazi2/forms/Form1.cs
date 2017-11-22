@@ -151,11 +151,12 @@ namespace guazi2
             _commentGr.Clear();
             pCommentOutput.Image = null;
 
-            if (_guazi?.LiveStatus == "LIVE")
+            if (_guazi?.LiveStatus != 0)
                 lRoomStatus.Text = "直播中";
-            else if (_guazi?.LiveStatus == "ROUND")
-                lRoomStatus.Text = "轮播中: " + _guazi?.RoundTitle;
-            else if (_guazi?.LiveStatus == "PREPARING")
+            //else if (_guazi?.LiveStatus == "ROUND")
+            //    lRoomStatus.Text = "轮播中: " + _guazi?.RoundTitle;
+            //else if (_guazi?.LiveStatus == "PREPARING")
+            else
                 lRoomStatus.Text = "准备中";
 
             lLiveTime.Left = lRoomStatus.Left + lRoomStatus.Width + 10;
@@ -171,11 +172,12 @@ namespace guazi2
             Invoke(new NoArgSTA(delegate
             {
                 lRoomName.Text = _guazi?.RoomTitle;
-                if (_guazi?.LiveStatus == "LIVE")
+                if (_guazi?.LiveStatus != 0)
                     lRoomStatus.Text = "直播中";
-                else if (_guazi?.LiveStatus == "ROUND")
-                    lRoomStatus.Text = "轮播中: " + _guazi?.RoundTitle;
-                else if (_guazi?.LiveStatus == "PREPARING")
+                //else if (_guazi?.LiveStatus == "ROUND")
+                //    lRoomStatus.Text = "轮播中: " + _guazi?.RoundTitle;
+                //else if (_guazi?.LiveStatus == "PREPARING")
+                else
                     lRoomStatus.Text = "准备中";
                 lLiveTime.Left = lRoomStatus.Left + lRoomStatus.Width + 10;
             }));

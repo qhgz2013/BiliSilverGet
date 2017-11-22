@@ -19,10 +19,10 @@ namespace guazi2
         protected api() { }
 
         #region urls
-        private const string _APPKEY = "1d8b6e7d45233436";
-        private const string _APPKEY_SECRET = "560c52ccd288fed045859ed18bffd973";
+        public const string APPKEY = "1d8b6e7d45233436";
+        public const string APPKEY_SECRET = "560c52ccd288fed045859ed18bffd973";
 
-        private const string _ANDROID_USER_AGENT = "Mozilla/5.0 BiliDroid/5.13.0 (bbcallen@gmail.com)";
+        public const string ANDROID_USER_AGENT = "Mozilla/5.0 BiliDroid/5.13.0 (bbcallen@gmail.com)";
         private const string _URL_AUTH_GET_KEY = "https://passport.bilibili.com/api/oauth2/getKey";
         private const string _URL_AUTH_LOGIN = "https://passport.bilibili.com/api/oauth2/login";
         private const string _URL_AUTH_INFO = "https://passport.bilibili.com/api/oauth2/info";
@@ -62,11 +62,11 @@ namespace guazi2
 
         #region private functions
         //计算api的sign
-        private static string _calc_sign(Parameters param)
+        public static string CalculateSign(Parameters param)
         {
             param.SortParameters();
             var md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
-            var param_str = param.BuildQueryString() + _APPKEY_SECRET;
+            var param_str = param.BuildQueryString() + APPKEY_SECRET;
             var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(param_str));
             return util.Hex(hash);
         }
@@ -77,14 +77,14 @@ namespace guazi2
             var ns = new NetStream();
             var param = new Parameters();
             param.Add("access_token", _access_token);
-            param.Add("appkey", _APPKEY);
+            param.Add("appkey", APPKEY);
             param.Add("build", "513000");
             param.Add("mobi_app", "android");
             param.Add("platform", "android");
             param.Add("ts", (long)util.ToUnixTimestamp(DateTime.Now));
-            param.Add("sign", _calc_sign(param));
+            param.Add("sign", CalculateSign(param));
 
-            ns.UserAgent = _ANDROID_USER_AGENT;
+            ns.UserAgent = ANDROID_USER_AGENT;
             try
             {
                 ns.HttpGet(_URL_AUTH_INFO, urlParam: param);
@@ -124,14 +124,14 @@ namespace guazi2
         {
             var ns = new NetStream();
             var param = new Parameters();
-            param.Add("appkey", _APPKEY);
+            param.Add("appkey", APPKEY);
             param.Add("build", "513000");
             param.Add("mobi_app", "android");
             param.Add("platform", "android");
             param.Add("ts", (long)util.ToUnixTimestamp(DateTime.Now));
-            param.Add("sign", _calc_sign(param));
+            param.Add("sign", CalculateSign(param));
 
-            ns.UserAgent = _ANDROID_USER_AGENT;
+            ns.UserAgent = ANDROID_USER_AGENT;
             try
             {
                 ns.HttpPost(_URL_AUTH_GET_KEY, param);
@@ -198,16 +198,16 @@ namespace guazi2
                     _sso_refresh_thread.Abort();
 
                 var ns = new NetStream();
-                ns.UserAgent = _ANDROID_USER_AGENT;
+                ns.UserAgent = ANDROID_USER_AGENT;
                 var param = new Parameters();
                 param.Add("access_key", _access_token);
-                param.Add("appkey", _APPKEY);
+                param.Add("appkey", APPKEY);
                 param.Add("build", "513000");
                 param.Add("gourl", "https://www.bilibili.com/");
                 param.Add("mobi_app", "android");
                 param.Add("platform", "android");
                 param.Add("ts", (long)util.ToUnixTimestamp(DateTime.Now));
-                param.Add("sign", _calc_sign(param));
+                param.Add("sign", CalculateSign(param));
 
                 ns.HttpGet(_URL_AUTH_SSO, urlParam: param);
                 //var response = ns.ReadResponseString();
@@ -321,16 +321,16 @@ namespace guazi2
 
             var ns = new NetStream();
             var param = new Parameters();
-            param.Add("appkey", _APPKEY);
+            param.Add("appkey", APPKEY);
             param.Add("build", "513000");
             param.Add("mobi_app", "android");
             param.Add("password", _encrypt_password(hash, public_key, password));
             param.Add("platform", "android");
             param.Add("ts", (long)util.ToUnixTimestamp(DateTime.Now));
             param.Add("username", username);
-            param.Add("sign", _calc_sign(param));
+            param.Add("sign", CalculateSign(param));
 
-            ns.UserAgent = _ANDROID_USER_AGENT;
+            ns.UserAgent = ANDROID_USER_AGENT;
             try
             {
                 ns.HttpPost(_URL_AUTH_LOGIN, param);
