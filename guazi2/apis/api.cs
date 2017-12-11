@@ -241,7 +241,7 @@ namespace guazi2
                         {
                             while (dede_user_expire_time > DateTime.Now)
                             {
-                                var ts = (dede_user_expire_time - DateTime.Now).TotalMilliseconds;
+                                var ts = (dede_user_expire_time.AddSeconds(1) - DateTime.Now).TotalMilliseconds;
                                 var sleep_time = (int)Math.Min(ts, 3600000);
                                 if (sleep_time > 0)
                                     Thread.Sleep(sleep_time);

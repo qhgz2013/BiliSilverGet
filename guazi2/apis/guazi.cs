@@ -144,14 +144,17 @@ namespace guazi2
                 if (_roomInfo == null) return 0;
                 if (LiveStatus != 0)
                 {
-                    var str =  _roomInfo["data"].Value<string>("live_time");
+                    var str = _roomInfo["data"].Value<string>("live_time");
                     var match = Regex.Match(str, @"^(?<yr>\d+)-(?<mo>\d+)-(?<dy>\d+)\s(?<hr>\d+):(?<mi>\d+):(?<sc>\d+)$");
                     if (match.Success)
                     {
-                        return (ulong)util.ToUnixTimestamp(new DateTime(int.Parse(match.Result("${yr}")),
-                            int.Parse(match.Result("${mo}")), int.Parse(match.Result("${dy}")),
-                            int.Parse(match.Result("${hr}")), int.Parse(match.Result("${mi}")), int.Parse(match.Result("${sc}"))
-                            ));
+                        if (str != "0000-00-00 00:00:00")
+                            return (ulong)util.ToUnixTimestamp(new DateTime(int.Parse(match.Result("${yr}")),
+                                int.Parse(match.Result("${mo}")), int.Parse(match.Result("${dy}")),
+                                int.Parse(match.Result("${hr}")), int.Parse(match.Result("${mi}")), int.Parse(match.Result("${sc}"))
+                                ));
+                        else
+                            return 0;
                     }
                     else
                         return 0;
@@ -1482,7 +1485,7 @@ namespace guazi2
             _tracer.TraceInfo("JoinSmallTV called");
             _tracer.TraceInfo("[SmallTV] roomid: " + roomid + ", tv_id: " + tvid);
 
-            var url = "https://api.live.bilibili.com/SmallTV/join?roomid=" + roomid + "&id=" + tvid;
+            var url = "https://api.live.bilibili.com/gift/v2/smalltv/join?roomid=" + roomid + "&raffleId=" + tvid;
             var request = get_request();
             var header_param = new Parameters();
             header_param.Add("Origin", "https://live.bilibili.com");
@@ -1504,7 +1507,7 @@ namespace guazi2
                 int code = json.Value<int>("code");
                 if (code == 0)
                 {
-                    int dt = json.Value<int>("dtime");
+                    int dt = json["data"].Value<int>("time");
                     SmallTVJoined?.Invoke(roomid, tvid);
                     return DateTime.Now.AddSeconds(dt);
                 }
