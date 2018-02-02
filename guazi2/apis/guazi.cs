@@ -409,7 +409,7 @@ namespace guazi2
                 while (true)
                 {
                     //获取新的瓜子宝箱
-                    var get_new_tasks_url = "https://live.bilibili.com/FreeSilver/getCurrentTask";
+                    var get_new_tasks_url = "https://api.live.bilibili.com/lottery/v1/SilverBox/getCurrentTask";
                     var request = get_request();
                     _tracer.TraceInfo("Getting new silver task");
                     JObject json = null;
@@ -469,7 +469,7 @@ namespace guazi2
                     Image captcha = null;
                     int ocr_count = 0;
                     int captcha_result = -1;
-                    var captcha_url = "https://live.bilibili.com/FreeSilver/getCaptcha?ts=" + get_timestamp();
+                    var captcha_url = "https://api.live.bilibili.com/lottery/v1/SilverBox/getCaptcha?ts=" + get_timestamp();
 
                     do
                     {
@@ -477,7 +477,19 @@ namespace guazi2
                         {
                             _tracer.TraceInfo("Getting captcha image");
                             request.HttpGet(captcha_url, header);
-                            captcha = Image.FromStream(request.Stream);
+                            //captcha = Image.FromStream(request.Stream);
+                            var response_str = request.ReadResponseString();
+                            json = JsonConvert.DeserializeObject(response_str) as JObject;
+
+                            _tracer.TraceInfo(response_str);
+                            var code = json.Value<int>("code");
+                            if (code != 0)
+                                throw new InvalidDataException("Get Captcha Image Failed: code=" + code + ", msg=" + json.Value<string>("msg"));
+                            var img_base64 = json["data"].Value<string>("img");
+                            var index_base64 = img_base64.IndexOf("base64,");
+                            img_base64 = img_base64.Substring(index_base64 + 7);
+                            var decoded_data = Convert.FromBase64String(img_base64);
+                            captcha = Image.FromStream(new MemoryStream(decoded_data));
                         }
                         catch (ThreadAbortException) { throw; }
                         catch (Exception ex)
@@ -488,7 +500,7 @@ namespace guazi2
                         }
 
                         //ocr
-                        const string temp_filename = "tempCaptcha.jpg";
+                        const string temp_filename = "tempCaptcha.png";
                         captcha.Save(temp_filename);
                         string result = Marshal.PtrToStringAnsi(ocr.OCR(temp_filename, -1));
                         _tracer.TraceInfo("OCR Result: " + result);
@@ -517,7 +529,7 @@ namespace guazi2
 
 
                     //领取宝箱
-                    var award_url = "https://live.bilibili.com/FreeSilver/getAward";
+                    var award_url = "https://api.live.bilibili.com/lottery/v1/SilverBox/getAward";
                     var award_param = new Parameters();
                     award_param.Add("time_start", _grabsilverTimeStart);
                     award_param.Add("time_end", _grabSilverTimeEnd);
